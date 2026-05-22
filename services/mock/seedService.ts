@@ -7,7 +7,7 @@ import { mockWallet } from "./data/wallet";
 import { mockChapterProgress, mockRecentChapters } from "./data/progress";
 import { mockWeeklyQuiz, mockLeaderboard } from "./data/weeklyQuiz";
 
-const SEED_VERSION = "learnflow_mock_v1";
+const SEED_VERSION = "learnflow_mock_v2";
 
 export async function seedIfNeeded(): Promise<void> {
   if (!USE_MOCK) return;

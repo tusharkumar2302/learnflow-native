@@ -1,6 +1,8 @@
 import { ChapterProgressRecord } from "@/services/interfaces/IProgressService";
 import { RecentChapter } from "@/services/interfaces/ICourseService";
 
+// User is mid-way through "AI Tools for Financial Research":
+// Ch1 done, Ch2 done, Ch3 in progress at 2m34s
 export const mockChapterProgress: Record<string, ChapterProgressRecord> = {
   "ch-ai-001": {
     chapterId: "ch-ai-001",
@@ -22,13 +24,14 @@ export const mockChapterProgress: Record<string, ChapterProgressRecord> = {
   },
 };
 
+// "Continue Learning" card on Home — resumes at Ch3, 2m34s in
 export const mockRecentChapters: RecentChapter[] = [
   {
     courseId: "course-ai-001",
-    courseTitle: "AI Tools for Everyday Work",
+    courseTitle: "AI Tools for Financial Research",
     courseThumbnail: "https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=400&q=80",
     chapterId: "ch-ai-003",
-    chapterTitle: "AI for Writing and Communication",
+    chapterTitle: "Using ChatGPT for Financial Analysis",
     chapterOrder: 3,
     currentTime: 154,
     progressPercentage: 33,
