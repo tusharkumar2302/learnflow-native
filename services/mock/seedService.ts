@@ -1,18 +1,26 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
+import { USE_MOCK } from "@/config";
 import { mockUser, mockAuthToken } from "./data/user";
 import { mockCourseSummaries, mockCourseDetails } from "./data/courses";
 import { mockWallet } from "./data/wallet";
 import { mockChapterProgress, mockRecentChapters } from "./data/progress";
 import { mockWeeklyQuiz, mockLeaderboard } from "./data/weeklyQuiz";
 
-// Bump version string to force re-seed when data schema changes
-const SEED_VERSION = "zuperlearn_mock_v1";
+const SEED_VERSION = "learnflow_mock_v1";
 
 export async function seedIfNeeded(): Promise<void> {
+  if (!USE_MOCK) return;
+
   try {
     const seeded = await AsyncStorage.getItem(SEED_VERSION);
     if (seeded === "true") return;
 
+    // Seed mock auth so app auto-authenticates in demo mode
+    await SecureStore.setItemAsync("authToken", mockAuthToken);
+    await AsyncStorage.setItem("authToken", mockAuthToken);
+
+    // Seed app data
     await AsyncStorage.multiSet([
       ["mock_user", JSON.stringify(mockUser)],
       ["mock_auth_token", mockAuthToken],
@@ -25,15 +33,19 @@ export async function seedIfNeeded(): Promise<void> {
       ["mock_leaderboard", JSON.stringify(mockLeaderboard)],
     ]);
 
+    // Also set authStore name for display
+    await AsyncStorage.setItem("mock_user_name", mockUser.name);
+
     await AsyncStorage.setItem(SEED_VERSION, "true");
   } catch (error) {
-    console.error("Seed error:", error);
+    console.error("[SeedService] Failed to seed:", error);
   }
 }
 
-// Call during development to force re-seed on next launch
+// Dev-only: call to force re-seed on next launch
 export async function clearSeed(): Promise<void> {
-  if (__DEV__) {
-    await AsyncStorage.removeItem(SEED_VERSION);
-  }
+  if (!__DEV__) return;
+  await AsyncStorage.removeItem(SEED_VERSION);
+  await SecureStore.deleteItemAsync("authToken").catch(() => {});
+  await AsyncStorage.removeItem("authToken");
 }

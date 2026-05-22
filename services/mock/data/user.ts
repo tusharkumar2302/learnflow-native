@@ -2,8 +2,8 @@ import { UserProfile } from "@/services/interfaces/IAuthService";
 
 export const mockUser: UserProfile = {
   id: "user-demo-001",
-  name: "Alex Rivera",
-  email: "alex@demo.com",
+  name: "Arjun Sharma",
+  email: "arjun@demo.com",
   imgUrl: null,
   subscriptionTier: "ZUPER_PRO",
   streak: 7,

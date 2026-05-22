@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 
 import { authStore } from "@/stores/authStore";
+import { seedIfNeeded } from "@/services/mock/seedService";
 import Splash from "./splash/Splash";
 
 const Index = () => {
@@ -36,9 +37,10 @@ const Index = () => {
 
     const initAuth = async () => {
       try {
+        await seedIfNeeded();
         await authStore.getState().loadToken();
       } catch (error) {
-        console.error("Error loading token:", error);
+        console.error("Error initializing app:", error);
       } finally {
         setIsInitializing(false);
       }
