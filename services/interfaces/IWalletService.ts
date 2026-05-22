@@ -5,6 +5,7 @@ export interface WalletTransaction {
   note: string;
   date: string;
   formattedDate: string;
+  formattedDateTime: string;
   course?: string | null;
 }
 

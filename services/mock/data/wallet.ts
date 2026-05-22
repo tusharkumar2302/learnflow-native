@@ -12,6 +12,7 @@ export const mockWallet: WalletSummary = {
       note: "AI Tools Ch.2 — ChatGPT for Professionals",
       date: "2026-05-20T14:32:00Z",
       formattedDate: "May 20",
+      formattedDateTime: "May 20, 2:32 PM",
       course: "AI Tools for Everyday Work",
     },
     {
@@ -21,6 +22,7 @@ export const mockWallet: WalletSummary = {
       note: "AI Tools Ch.1 — Why AI Tools Are Changing How We Work",
       date: "2026-05-19T10:15:00Z",
       formattedDate: "May 19",
+      formattedDateTime: "May 19, 10:15 AM",
       course: "AI Tools for Everyday Work",
     },
     {
@@ -30,6 +32,7 @@ export const mockWallet: WalletSummary = {
       note: "Stock Market Ch.5 — Building a Simple Portfolio",
       date: "2026-05-15T16:45:00Z",
       formattedDate: "May 15",
+      formattedDateTime: "May 15, 4:45 PM",
       course: "Stock Market Basics",
     },
     {
@@ -39,6 +42,7 @@ export const mockWallet: WalletSummary = {
       note: "Payout Request #1042 — Approved",
       date: "2026-05-10T09:00:00Z",
       formattedDate: "May 10",
+      formattedDateTime: "May 10, 9:00 AM",
       course: null,
     },
     {
@@ -48,6 +52,7 @@ export const mockWallet: WalletSummary = {
       note: "Stock Market Ch.4 — Order Types and Execution",
       date: "2026-05-08T11:30:00Z",
       formattedDate: "May 8",
+      formattedDateTime: "May 8, 11:30 AM",
       course: "Stock Market Basics",
     },
     {
@@ -57,6 +62,7 @@ export const mockWallet: WalletSummary = {
       note: "Stock Market Ch.3 — Key Financial Ratios Explained",
       date: "2026-05-05T15:20:00Z",
       formattedDate: "May 5",
+      formattedDateTime: "May 5, 3:20 PM",
       course: "Stock Market Basics",
     },
     {
@@ -66,6 +72,7 @@ export const mockWallet: WalletSummary = {
       note: "Stock Market Ch.2 — Reading a Balance Sheet",
       date: "2026-05-02T13:10:00Z",
       formattedDate: "May 2",
+      formattedDateTime: "May 2, 1:10 PM",
       course: "Stock Market Basics",
     },
     {
@@ -75,6 +82,7 @@ export const mockWallet: WalletSummary = {
       note: "Course Complete Bonus — Stock Market Basics",
       date: "2026-04-28T17:00:00Z",
       formattedDate: "Apr 28",
+      formattedDateTime: "Apr 28, 5:00 PM",
       course: "Stock Market Basics",
     },
   ],

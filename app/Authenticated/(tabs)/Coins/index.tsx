@@ -1,10 +1,9 @@
-import MenuBar from "@/components/common/MenuBar";
 import CoinsTabs from "@/components/ui/Coins/CoinsTab";
 import CoinsWalletCard from "@/components/ui/Coins/WalletCard";
 import HowItWorks from "@/components/ui/Home/HowItWorks";
-import { useWalletStore } from "@/stores/Wallet/walletStore";
+import { useWallet } from "@/hooks/useWallet";
 import { useRouter } from "expo-router";
-import React, { useEffect } from "react";
+import React from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -17,16 +16,11 @@ import {
 const { width: screenWidth } = Dimensions.get("window");
 
 export default function CoinsWallet() {
-  const [menuVisible, setMenuVisible] = React.useState(false);
-  const { walletData, loading, fetchWalletData } = useWalletStore();
   const router = useRouter();
-
-  useEffect(() => {
-    fetchWalletData();
-  }, []);
+  const { wallet, isLoading } = useWallet();
 
   return (
-    <View className="bg-[#f5f3ff] flex-1 ">
+    <View className="bg-[#f5f3ff] flex-1">
       {/* Header */}
       <View
         style={{
@@ -38,11 +32,8 @@ export default function CoinsWallet() {
           paddingHorizontal: screenWidth * 0.0625,
         }}
       >
-        {/* Back/Menu Button */}
         <TouchableOpacity
-          onPress={() => {
-            router.push("/Authenticated/(tabs)/Home");
-          }}
+          onPress={() => router.push("/Authenticated/(tabs)/Home")}
           className="p-2 bg-[#FFFFFF59] rounded-full h-12 w-12 items-center justify-center"
           style={{ zIndex: 1 }}
         >
@@ -52,7 +43,6 @@ export default function CoinsWallet() {
           />
         </TouchableOpacity>
 
-        {/* Centered Title */}
         <Text
           style={{
             position: "absolute",
@@ -67,52 +57,39 @@ export default function CoinsWallet() {
           Wallet
         </Text>
 
-        {/* Right - Coins Balance */}
         <View style={{ flex: 1, alignItems: "flex-end" }}>
           <View className="flex-row items-center bg-[#B483F140] rounded-full h-[32px] pl-8 pr-5 relative">
             <Image
               source={require("@/assets/icons/Coins/coin.png")}
-              style={{
-                height: 40,
-                width: 40,
-                position: "absolute",
-                left: -12,
-                zIndex: 10,
-              }}
+              style={{ height: 40, width: 40, position: "absolute", left: -12, zIndex: 10 }}
             />
             <Text className="text-black text-base font-teachers-bold ml-2">
-              {walletData?.balance || 0}
+              {wallet?.balance ?? 0}
             </Text>
           </View>
         </View>
       </View>
 
-      {loading ? (
+      {isLoading ? (
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#730A96" />
-          <Text className="text-gray-600 mt-2 font-teachers-medium">
-            Loading wallet data...
+          <Text className="text-gray-500 mt-2 font-teachers-medium text-sm">
+            Loading...
           </Text>
         </View>
       ) : (
         <View className="flex-1">
           <CoinsWalletCard
-            coins={walletData?.balance || 0}
+            coins={wallet?.balance ?? 0}
             maxCoins={10000}
             screen="coins"
-            totalEarned={walletData?.totalEarned || 0}
-            totalRedeemed={walletData?.totalRedeemed || 0}
+            totalEarned={wallet?.totalEarned ?? 0}
+            totalRedeemed={wallet?.totalRedeemed ?? 0}
           />
           <HowItWorks />
-          <CoinsTabs transactions={walletData?.transactions || []} />
+          <CoinsTabs transactions={wallet?.transactions ?? []} />
         </View>
       )}
-      <MenuBar
-        visible={menuVisible}
-        onClose={() => {
-          setMenuVisible(false);
-        }}
-      />
     </View>
   );
 }

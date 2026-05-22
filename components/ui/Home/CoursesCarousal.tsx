@@ -1,7 +1,6 @@
-import { authStore } from "@/stores/authStore";
-import axios from "axios";
-import { useFocusEffect, useRouter } from "expo-router";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useCourses, useCourseSearch } from "@/hooks/useCourses";
+import { useRouter } from "expo-router";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -12,17 +11,6 @@ import {
 } from "react-native";
 import CourseCardNew from "./CourseCardNew";
 
-type CourseApiItem = {
-  id: string;
-  title: string;
-  author: string;
-  price?: number | string | null;
-  duration: any;
-  thumbnail: any;
-  category?: string;
-  totalCoins: number;
-};
-
 type CoursesCarouselProps = {
   showSearchBar?: boolean;
   orientation?: "horizontal" | "vertical";
@@ -32,7 +20,6 @@ type CoursesCarouselProps = {
 };
 
 export default function CoursesCarousel({
-  showSearchBar = true,
   orientation = "horizontal",
   showViewAll = true,
   screen,
@@ -41,129 +28,29 @@ export default function CoursesCarousel({
   const router = useRouter();
   const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
-  const { token } = authStore();
-  const baseUrl = process.env.EXPO_PUBLIC_API_URL;
+  const [selectedCategory, setSelectedCategory] = useState<string>("All");
 
-  const [selectedTag, setSelectedTag] = useState<string>("All");
-  const [search, setSearch] = useState<string>("");
+  const { courses, categories, isLoading } = useCourses();
+  const { results: searchResults, isSearching, search, clearSearch } = useCourseSearch();
+
+  const [searchText, setSearchText] = useState("");
   const [searchActive, setSearchActive] = useState(false);
 
-  const [isLoading, setIsLoading] = useState(true);
-  const [tags, setTags] = useState<string[]>(["All"]);
-
-  const [courses, setCourses] = useState<CourseApiItem[]>([]);
-  const [searchResults, setSearchResults] = useState<CourseApiItem[]>([]);
-
-  const canFetch = !!token && !!baseUrl;
-
-  // ---------------------------------------------------------------------------
-  // Fetch courses
-  // ---------------------------------------------------------------------------
-  const fetchCourses = useCallback(async () => {
-    if (!canFetch) return;
-
-    setIsLoading(true);
-    try {
-      const res = await axios.get(
-        `${baseUrl}/api/user/courses?page=1&limit=10`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-
-      const arr: CourseApiItem[] = res?.data?.data ?? [];
-      setCourses(arr);
-
-      const uniqueCategories = [
-        ...new Set(arr.map((c) => c.category).filter(Boolean)),
-      ] as string[];
-      setTags(["All", ...uniqueCategories]);
-    } catch (error) {
-      console.log("Error fetching courses:", error);
-      setCourses([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [baseUrl, token, canFetch]);
-
-  const fetchCoursesBySearch = useCallback(
-    async (value: string) => {
-      if (!canFetch) return;
-
-      const query = value.trim();
-      if (!query) {
-        setSearchResults([]);
-        return;
-      }
-
-      try {
-        const res = await axios.get(
-          `${baseUrl}/api/user/courses/search?q=${encodeURIComponent(query)}&limit=10`,
-          { headers: { Authorization: `Bearer ${token}` } },
-        );
-
-        const arr: CourseApiItem[] = res?.data?.data ?? [];
-        setSearchResults(arr);
-      } catch (error) {
-        console.log("Search error:", error);
-        setSearchResults([]);
-      }
-    },
-    [baseUrl, token, canFetch],
-  );
-
-  useFocusEffect(
-    useCallback(() => {
-      if (canFetch) fetchCourses();
-      return () => {};
-    }, [canFetch, fetchCourses]),
-  );
-
   useEffect(() => {
-    if (!searchActive || !search.trim()) {
-      setSearchResults([]);
+    if (!searchActive || !searchText.trim()) {
+      clearSearch();
       return;
     }
-
-    const delay = setTimeout(() => {
-      fetchCoursesBySearch(search);
-    }, 400);
-
+    const delay = setTimeout(() => search(searchText), 400);
     return () => clearTimeout(delay);
-  }, [searchActive, search, fetchCoursesBySearch]);
+  }, [searchActive, searchText, search, clearSearch]);
 
   const filteredCourses = useMemo(() => {
-    const list = courses;
+    if (!showFilters || selectedCategory === "All") return courses;
+    return courses.filter((c) => c.category === selectedCategory);
+  }, [courses, selectedCategory, showFilters]);
 
-    const byTag =
-      !showFilters || selectedTag === "All"
-        ? list
-        : list.filter((c) => c.category === selectedTag);
-
-    const bySearchText = search.trim()
-      ? byTag.filter((c) =>
-          (c.title || "").toLowerCase().includes(search.trim().toLowerCase()),
-        )
-      : byTag;
-
-    return bySearchText;
-  }, [courses, selectedTag, search, showFilters]);
-
-  const dataToRender =
-    searchActive && search.trim() ? searchResults : filteredCourses;
-
-  const handleSearchFocus = () => setSearchActive(true);
-
-  const handleSearchClear = () => {
-    setSearch("");
-    setSearchResults([]);
-    setSearchActive(false);
-  };
-
-  const handleSearchSubmit = (text: string) => {
-    setSearchActive(true);
-    fetchCoursesBySearch(text);
-  };
+  const dataToRender = searchActive && searchText.trim() ? searchResults : filteredCourses;
 
   return (
     <>
@@ -179,17 +66,16 @@ export default function CoursesCarousel({
           <View className="flex-row items-center justify-between mb-2">
             <Text
               className="font-teachers-medium"
-              style={{ fontSize: screenHeight * 0.025 }}
+              style={{ fontSize: screenHeight * 0.022 }}
             >
               Courses
             </Text>
-
             <TouchableOpacity
               onPress={() => router.push("/Authenticated/(tabs)/Courses")}
-              className="px-4 py-2 rounded-full"
+              className="px-3 py-1.5 rounded-full"
             >
               <Text className="text-black/40 font-teachers-medium underline text-sm">
-                View All
+                View all
               </Text>
             </TouchableOpacity>
           </View>
@@ -198,7 +84,6 @@ export default function CoursesCarousel({
         {isLoading ? (
           <View className="items-center justify-center py-10">
             <ActivityIndicator size="large" color="#730A96" />
-            <Text className="text-gray-500 mt-2">Loading courses...</Text>
           </View>
         ) : (
           <FlatList
@@ -215,10 +100,13 @@ export default function CoursesCarousel({
               <CourseCardNew
                 title={item.title}
                 author={item.author}
-                category={item.category}
-                price={!item.price ? 0 : item.price}
+                category={item.category ?? ""}
+                price={String(item.price ?? 0)}
                 id={item.id}
-                duration={{ hours: item.duration, seconds: item.duration }}
+                duration={{
+                  hours: String(item.estimatedDuration),
+                  seconds: String(item.estimatedDuration),
+                }}
                 image={item.thumbnail}
                 orientation={orientation}
                 courses="all"
@@ -227,13 +115,14 @@ export default function CoursesCarousel({
             )}
             ListEmptyComponent={
               <View className="py-8">
-                <Text className="text-gray-500">No courses found.</Text>
+                <Text className="text-gray-400 font-poppins-regular text-sm">
+                  No courses found.
+                </Text>
               </View>
             }
           />
         )}
       </View>
-
     </>
   );
 }
