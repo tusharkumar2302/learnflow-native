@@ -2,7 +2,6 @@ import { useCourses, useCourseSearch } from "@/hooks/useCourses";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
   Dimensions,
   FlatList,
   Text,
@@ -26,7 +25,7 @@ export default function CoursesCarousel({
   showFilters = true,
 }: CoursesCarouselProps) {
   const router = useRouter();
-  const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
+  const { width: screenWidth } = Dimensions.get("window");
 
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
 
@@ -63,18 +62,15 @@ export default function CoursesCarousel({
         }}
       >
         {showViewAll && screen !== "learnNext" && screen !== "completed" && (
-          <View className="flex-row items-center justify-between mb-2">
-            <Text
-              className="font-teachers-medium"
-              style={{ fontSize: screenHeight * 0.022 }}
-            >
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <Text style={{ fontFamily: "Teachers-SemiBold", fontSize: 17, color: "#0D0D0D" }}>
               Courses
             </Text>
             <TouchableOpacity
               onPress={() => router.push("/Authenticated/(tabs)/Courses")}
-              className="px-3 py-1.5 rounded-full"
+              activeOpacity={0.7}
             >
-              <Text className="text-black/40 font-teachers-medium underline text-sm">
+              <Text style={{ fontFamily: "Poppins-Regular", fontSize: 12, color: "rgba(0,0,0,0.38)" }}>
                 View all
               </Text>
             </TouchableOpacity>
@@ -82,8 +78,18 @@ export default function CoursesCarousel({
         )}
 
         {isLoading ? (
-          <View className="items-center justify-center py-10">
-            <ActivityIndicator size="large" color="#730A96" />
+          <View style={{ gap: 10 }}>
+            {[1, 2, 3].map((i) => (
+              <View
+                key={i}
+                style={{
+                  height: 90,
+                  backgroundColor: "#FFFFFF",
+                  borderRadius: 14,
+                  opacity: 1 - i * 0.15,
+                }}
+              />
+            ))}
           </View>
         ) : (
           <FlatList

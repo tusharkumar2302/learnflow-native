@@ -1,4 +1,5 @@
 import currentVid from "@/stores/currentVid";
+import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import LottieView from "lottie-react-native";
 import React from "react";
@@ -52,7 +53,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
           onLockedPress?.();
           return;
         }
-
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         setVidId(id);
         router.push({
           pathname: "/Authenticated/(tabs)/Courses/CouseVideos",

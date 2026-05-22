@@ -45,6 +45,8 @@ export interface RecentChapter {
   courseId: string;
   courseTitle: string;
   courseThumbnail: string | null;
+  category: string;
+  totalChapters: number;
   chapterId: string;
   chapterTitle: string;
   chapterOrder: number;

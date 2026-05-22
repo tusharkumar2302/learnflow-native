@@ -1,158 +1,233 @@
 import currentVid from "@/stores/currentVid";
 import { useRecentlyWatched } from "@/hooks/useRecentlyWatched";
+import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React from "react";
-import { Dimensions, Image, Pressable, Text, View } from "react-native";
+import {
+  Dimensions,
+  Image,
+  Pressable,
+  Text,
+  View,
+} from "react-native";
 
-const ContinueWatchingCard = ({
-  continueTxt = true,
-}: {
-  continueTxt?: boolean;
-}) => {
-  const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
-  const cardHeight = screenHeight * 0.16;
-  const totalSectionHeight = cardHeight + screenHeight * 0.05;
-  const router = useRouter();
-  const { setVidId } = currentVid();
-  const { items: vidData, isLoading } = useRecentlyWatched(5);
+const { width: screenWidth } = Dimensions.get("window");
+const CARD_WIDTH = screenWidth * 0.875;
 
-  if (isLoading) {
-    return (
+function formatMinutes(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  return m > 0 ? `${m}m` : "<1m";
+}
+
+function ContinueSkeleton() {
+  return (
+    <View style={{ width: CARD_WIDTH, alignSelf: "center", marginTop: 16, marginBottom: 8 }}>
       <View
-        className="mt-2 self-center mb-[20px]"
-        style={{ width: screenWidth * 0.875, height: totalSectionHeight }}
+        style={{
+          height: 16,
+          width: 140,
+          backgroundColor: "#E8E4F5",
+          borderRadius: 6,
+          marginBottom: 10,
+        }}
+      />
+      <View
+        style={{
+          backgroundColor: "#FFFFFF",
+          borderRadius: 16,
+          height: 116,
+          flexDirection: "row",
+          overflow: "hidden",
+          shadowColor: "#563FA5",
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.06,
+          shadowRadius: 8,
+          elevation: 2,
+        }}
       >
-        {continueTxt && (
-          <Text
-            className="mb-2"
-            style={{ fontFamily: "Teachers-Medium", fontWeight: "500", fontSize: 18 }}
-          >
-            Continue Learning
-          </Text>
-        )}
-        <View className="bg-white flex-1 w-full rounded-[15px]">
-          <View className="flex-row h-full p-2 gap-3">
-            <View className="w-[48%] h-full bg-gray-100 rounded-md" />
-            <View className="flex-1 gap-2 pt-1">
-              <View className="h-4 w-[85%] bg-gray-100 rounded-md" />
-              <View className="h-3 w-[60%] bg-gray-100 rounded-md" />
-              <View className="h-2 w-full bg-gray-100 rounded-md mt-2" />
-            </View>
-          </View>
+        <View style={{ width: "42%", backgroundColor: "#EDE9F9" }} />
+        <View style={{ flex: 1, padding: 14, gap: 8, justifyContent: "center" }}>
+          <View style={{ height: 10, width: "50%", backgroundColor: "#EDE9F9", borderRadius: 4 }} />
+          <View style={{ height: 14, width: "90%", backgroundColor: "#EDE9F9", borderRadius: 4 }} />
+          <View style={{ height: 11, width: "70%", backgroundColor: "#EDE9F9", borderRadius: 4 }} />
+          <View style={{ height: 3, width: "100%", backgroundColor: "#EDE9F9", borderRadius: 4, marginTop: 4 }} />
         </View>
       </View>
-    );
+    </View>
+  );
+}
+
+const ContinueWatchingCard = ({ continueTxt = true }: { continueTxt?: boolean }) => {
+  const router = useRouter();
+  const { setVidId } = currentVid();
+  const { items: vidData, isLoading } = useRecentlyWatched(1);
+
+  if (isLoading) {
+    return continueTxt ? <ContinueSkeleton /> : null;
   }
 
   if (!vidData || vidData.length === 0) {
-    return (
-      <View
-        className="mt-2 self-center mb-[20px]"
-        style={{ width: screenWidth * 0.875, height: totalSectionHeight }}
-      >
-        {continueTxt && (
-          <Text
-            className="mb-2"
-            style={{ fontFamily: "Teachers-Medium", fontWeight: "500", fontSize: 18 }}
-          >
-            Continue Learning
-          </Text>
-        )}
-        <View className="bg-white flex-1 w-full flex items-center justify-center rounded-[15px]">
-          <Text className="font-teachers-medium text-[#0000008C] text-sm">
-            Start your first course
-          </Text>
-        </View>
-      </View>
-    );
+    return null;
   }
 
+  const item = vidData[0];
+  const savedTime = formatMinutes(item.currentTime);
+  const progress = Math.round(item.progressPercentage);
+
+  const handleResume = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setVidId(item.courseId);
+    router.push({
+      pathname: "/Authenticated/(tabs)/Courses/CouseVideos",
+      params: { id: item.courseId },
+    });
+  };
+
   return (
-    <View
-      className="mt-2 mb-[10px] self-center relative"
-      style={{ width: screenWidth * 0.875, height: totalSectionHeight }}
-    >
+    <View style={{ width: CARD_WIDTH, alignSelf: "center", marginTop: 16, marginBottom: 4 }}>
       {continueTxt && (
         <Text
-          className="mb-1"
-          style={{ fontFamily: "Teachers-Medium", fontWeight: "500", fontSize: 18 }}
+          style={{
+            fontFamily: "Teachers-SemiBold",
+            fontSize: 17,
+            color: "#0D0D0D",
+            marginBottom: 10,
+          }}
         >
           Continue Learning
         </Text>
       )}
 
-      {vidData.map((item) => {
-        const progress = Math.round(item.progressPercentage);
+      <Pressable
+        onPress={handleResume}
+        style={({ pressed }) => ({
+          backgroundColor: "#FFFFFF",
+          borderRadius: 16,
+          flexDirection: "row",
+          overflow: "hidden",
+          shadowColor: "#563FA5",
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: pressed ? 0.12 : 0.07,
+          shadowRadius: 10,
+          elevation: pressed ? 4 : 2,
+          opacity: pressed ? 0.97 : 1,
+        })}
+      >
+        {/* Thumbnail */}
+        <View style={{ width: "42%", minHeight: 116 }}>
+          {item.courseThumbnail ? (
+            <Image
+              source={{ uri: item.courseThumbnail }}
+              style={{ width: "100%", height: "100%" }}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={{ flex: 1, backgroundColor: "#EDE9F9" }} />
+          )}
+        </View>
 
-        return (
-          <Pressable
-            key={item.chapterId}
-            style={{ width: "100%" }}
-            onPress={() => {
-              setVidId(item.courseId);
-              router.push({
-                pathname: "/Authenticated/(tabs)/Courses/CouseVideos",
-                params: { id: item.courseId },
-              });
-            }}
-          >
+        {/* Content */}
+        <View style={{ flex: 1, padding: 14, justifyContent: "space-between" }}>
+          {/* Top: category + time saved */}
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
             <View
-              className="bg-white p-[2px] flex-row items-center justify-center rounded-[15px]"
-              style={{ height: screenHeight * 0.19 }}
+              style={{
+                backgroundColor: "rgba(86,63,165,0.08)",
+                borderRadius: 6,
+                paddingHorizontal: 7,
+                paddingVertical: 2,
+              }}
             >
-              <View className="w-[50%] h-full p-2">
-                {item.courseThumbnail ? (
-                  <Image
-                    source={{ uri: item.courseThumbnail }}
-                    className="h-full w-full rounded-md"
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <View className="h-full w-full rounded-md bg-gray-100" />
-                )}
-              </View>
+              <Text
+                style={{
+                  fontFamily: "Poppins-Medium",
+                  fontSize: 10,
+                  color: "#563FA5",
+                }}
+                numberOfLines={1}
+              >
+                {item.category}
+              </Text>
+            </View>
+            {item.currentTime > 0 && (
+              <Text
+                style={{
+                  fontFamily: "Poppins-Regular",
+                  fontSize: 10,
+                  color: "rgba(0,0,0,0.35)",
+                }}
+              >
+                {savedTime} in
+              </Text>
+            )}
+          </View>
 
-              <View className="w-[50%] h-full flex-col gap-1 p-2 justify-center">
-                <Text
-                  className="font-poppins-medium"
-                  numberOfLines={2}
-                  ellipsizeMode="tail"
-                  style={{ fontSize: screenHeight * 0.015 }}
-                >
-                  {item.courseTitle}
+          {/* Course title */}
+          <Text
+            style={{
+              fontFamily: "Poppins-SemiBold",
+              fontSize: 13,
+              color: "#0D0D0D",
+              lineHeight: 18,
+              marginTop: 4,
+            }}
+            numberOfLines={2}
+          >
+            {item.courseTitle}
+          </Text>
+
+          {/* Chapter context */}
+          <Text
+            style={{
+              fontFamily: "Poppins-Regular",
+              fontSize: 11,
+              color: "rgba(0,0,0,0.45)",
+              marginTop: 2,
+            }}
+            numberOfLines={1}
+          >
+            Ch.{item.chapterOrder} of {item.totalChapters} · {item.chapterTitle}
+          </Text>
+
+          {/* Progress row */}
+          <View style={{ marginTop: 8 }}>
+            <View
+              style={{
+                height: 3,
+                backgroundColor: "rgba(86,63,165,0.10)",
+                borderRadius: 2,
+                overflow: "hidden",
+              }}
+            >
+              <View
+                style={{
+                  width: `${Math.min(100, Math.max(0, progress))}%`,
+                  height: "100%",
+                  backgroundColor: "#563FA5",
+                  borderRadius: 2,
+                }}
+              />
+            </View>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
+              <Text style={{ fontFamily: "Poppins-Regular", fontSize: 10, color: "rgba(0,0,0,0.40)" }}>
+                {progress}% complete
+              </Text>
+              <View
+                style={{
+                  backgroundColor: "#563FA5",
+                  borderRadius: 8,
+                  paddingHorizontal: 10,
+                  paddingVertical: 4,
+                }}
+              >
+                <Text style={{ fontFamily: "Poppins-Medium", fontSize: 11, color: "#FFFFFF" }}>
+                  Resume →
                 </Text>
-                <Text
-                  className="font-poppins-regular text-[#0000008C]"
-                  numberOfLines={1}
-                  style={{ fontSize: screenHeight * 0.013 }}
-                >
-                  {item.chapterTitle}
-                </Text>
-
-                <View className="w-full h-[7px] bg-[#ECE9F4] rounded-[8px] flex justify-center px-[1px] mt-1">
-                  <View
-                    style={{
-                      width: `${Math.min(100, Math.max(0, progress))}%`,
-                      height: 5,
-                      backgroundColor: progress === 100 ? "#22C55E" : "#730A96",
-                      borderRadius: 4,
-                    }}
-                  />
-                </View>
-
-                <View className="flex flex-row justify-between w-full mt-0.5">
-                  <Text className="font-teachers-medium text-[#0000008C] text-xs">
-                    Progress
-                  </Text>
-                  <Text className="font-teachers-medium text-[#0000008C] text-xs">
-                    {progress}%
-                  </Text>
-                </View>
               </View>
             </View>
-          </Pressable>
-        );
-      })}
+          </View>
+        </View>
+      </Pressable>
     </View>
   );
 };

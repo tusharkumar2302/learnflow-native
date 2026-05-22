@@ -30,6 +30,8 @@ export const mockRecentChapters: RecentChapter[] = [
     courseId: "course-ai-001",
     courseTitle: "AI Tools for Financial Research",
     courseThumbnail: "https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=400&q=80",
+    category: "Productivity & Finance",
+    totalChapters: 6,
     chapterId: "ch-ai-003",
     chapterTitle: "Using ChatGPT for Financial Analysis",
     chapterOrder: 3,
