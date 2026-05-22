@@ -1,3 +1,4 @@
+import { USE_MOCK } from "@/config";
 import { useWeeklyQuizStore } from "@/stores/WeeklyQuiz/weeklyQuiz";
 import { formatDate, isQuizLive, isQuizUpcoming, timeLeft } from "@/utils/date";
 import { router } from "expo-router";
@@ -19,8 +20,13 @@ export default function WeeklyQuizCard() {
   const quiz = activeQuiz?.quiz;
 
   useEffect(() => {
+    // Skip in mock/demo mode — store uses legacy axios, would throw error toast
+    if (USE_MOCK) return;
     if (!activeQuiz) fetchActiveQuiz();
   }, []);
+
+  // No quiz data in mock mode — render nothing cleanly
+  if (USE_MOCK) return null;
 
   if (isLoading) {
     return (
