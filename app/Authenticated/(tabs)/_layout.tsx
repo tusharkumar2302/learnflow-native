@@ -1,28 +1,51 @@
+import { HugeiconsIcon } from "@hugeicons/react-native";
+import {
+  BookOpen01Icon,
+  FlashIcon,
+  Home01Icon,
+  UserCircleIcon,
+} from "@hugeicons/core-free-icons";
 import { PlatformPressable } from "@react-navigation/elements";
 import { Tabs } from "expo-router";
 import React from "react";
-import { Dimensions, Image, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { moderateScale, scale, verticalScale } from "react-native-size-matters";
+import { type IconSvgElement } from "@hugeicons/react-native";
 
-export default function _layout() {
-  const { width: screenWidth } = Dimensions.get("window");
-  const { height: screenHeight } = Dimensions.get("window");
+interface TabIconProps {
+  icon: IconSvgElement;
+  label: string;
+  focused: boolean;
+}
+
+function TabIcon({ icon, label, focused }: TabIconProps) {
+  return (
+    <View style={s.tabItem}>
+      <View style={[s.pill, focused && s.pillActive]}>
+        <HugeiconsIcon
+          icon={icon}
+          size={moderateScale(20)}
+          color={focused ? "#FFFFFF" : "rgba(255,255,255,0.40)"}
+          strokeWidth={focused ? 2 : 1.5}
+        />
+        <Text style={[s.label, focused && s.labelActive]}>{label}</Text>
+      </View>
+    </View>
+  );
+}
+
+export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: {
-          display: "none",
-          backgroundColor: "rgba(229, 228, 247, 0.4)",
-          borderTopWidth: 0,
-          // height:91,
-          height: 65,
-          paddingHorizontal: 20,
-          paddingBottom: 8,
-          // paddingTop: 10,
-          paddingTop: 5,
-          elevation: 0,
-          shadowOpacity: 0,
-        },
+        tabBarStyle: [
+          s.tabBar,
+          { paddingBottom: Math.max(insets.bottom, verticalScale(8)) },
+        ],
         tabBarButton: (props) => (
           <PlatformPressable
             {...props}
@@ -38,214 +61,79 @@ export default function _layout() {
         options={{
           tabBarLabel: () => null,
           tabBarIcon: ({ focused }) => (
-            <View
-              style={{
-                alignItems: "center",
-                justifyContent: "center",
-                flex: 1,
-              }}
-            >
-              <View
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  height: screenHeight * 0.064,
-                  marginTop: 16,
-                  width: screenWidth * 0.252,
-                  // backgroundColor: focused ? "#CAA2FC" : "",
-                  backgroundColor: focused ? "#563FA5" : "",
-                  borderRadius: 50,
-                }}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Image
-                  source={require("@/assets/icons/Tabs/home-icon.png")}
-                  style={{
-                    width: screenWidth * 0.055,
-                    height: screenHeight * 0.025,
-                    tintColor: focused ? "#fff" : "#0000008C",
-                  }}
-                  resizeMode="contain"
-                />
-                <Text
-                  style={{
-                    color: focused ? "#FFFFFF" : "#0000008C",
-                    fontSize: 12,
-                    fontWeight: focused ? "600" : "600",
-                    textAlign: "center",
-                    marginTop: 6,
-                  }}
-                >
-                  {"Home"}
-                </Text>
-              </View>
-            </View>
+            <TabIcon icon={Home01Icon} label="Home" focused={focused} />
           ),
         }}
-      ></Tabs.Screen>
-
+      />
       <Tabs.Screen
         name="Courses"
         options={{
-          href: null,
           tabBarLabel: () => null,
           tabBarIcon: ({ focused }) => (
-            <View
-              style={{
-                alignItems: "center",
-                justifyContent: "center",
-                flex: 1,
-              }}
-            >
-              <View
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  height: screenHeight * 0.064,
-                  marginTop: 16,
-                  width: screenWidth * 0.252,
-                  // backgroundColor: focused ? "#CAA2FC" : "",
-                  backgroundColor: focused ? "#563FA5" : "",
-                  borderRadius: 50,
-                }}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Image
-                  source={require("@/assets/icons/Tabs/courses-icon.png")}
-                  style={{
-                    width: screenWidth * 0.055,
-                    height: screenHeight * 0.025,
-                    tintColor: focused ? "#fff" : "#0000008C",
-                  }}
-                  resizeMode="contain"
-                />
-                <Text
-                  style={{
-                    color: focused ? "#FFFFFF" : "#0000008C",
-                    fontSize: 12,
-                    fontWeight: focused ? "600" : "600",
-                    textAlign: "center",
-                    marginTop: 6,
-                  }}
-                >
-                  {"Courses"}
-                </Text>
-              </View>
-            </View>
+            <TabIcon icon={BookOpen01Icon} label="Courses" focused={focused} />
           ),
         }}
-      ></Tabs.Screen>
-
+      />
       <Tabs.Screen
-        name="Coins/index"
+        name="Learn/index"
         options={{
-          href: null,
           tabBarLabel: () => null,
           tabBarIcon: ({ focused }) => (
-            <View
-              style={{
-                alignItems: "center",
-                justifyContent: "center",
-                flex: 1,
-              }}
-            >
-              <View
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  height: screenHeight * 0.064,
-                  marginTop: 16,
-                  width: screenWidth * 0.252,
-                  // backgroundColor: focused ? "#CAA2FC" : "",
-                  backgroundColor: focused ? "#563FA5" : "",
-                  borderRadius: 50,
-                }}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Image
-                  source={require("@/assets/icons/Tabs/coins-icon.png")}
-                  style={{
-                    width: screenWidth * 0.055,
-                    height: screenHeight * 0.025,
-                    tintColor: focused ? "#fff" : "#0000008C",
-                  }}
-                  resizeMode="contain"
-                />
-                <Text
-                  style={{
-                    color: focused ? "#FFFFFF" : "#0000008C",
-                    fontSize: 12,
-                    fontWeight: focused ? "600" : "600",
-                    textAlign: "center",
-                    marginTop: 6,
-                  }}
-                >
-                  {"Coins"}
-                </Text>
-              </View>
-            </View>
+            <TabIcon icon={FlashIcon} label="Learn" focused={focused} />
           ),
         }}
-      ></Tabs.Screen>
-
+      />
+      <Tabs.Screen name="Challenges/index" options={{ href: null }} />
       <Tabs.Screen
         name="Profile/index"
         options={{
           tabBarLabel: () => null,
           tabBarIcon: ({ focused }) => (
-            <View
-              style={{
-                alignItems: "center",
-                justifyContent: "center",
-                flex: 1,
-              }}
-            >
-              <View
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  height: screenHeight * 0.064,
-                  marginTop: 16,
-                  width: screenWidth * 0.252,
-                  // backgroundColor: focused ? "#CAA2FC" : "",
-                  backgroundColor: focused ? "#563FA5" : "",
-                  borderRadius: 50,
-                }}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Image
-                  source={require("@/assets/icons/Tabs/profile-icon.png")}
-                  style={{
-                    width: screenWidth * 0.055,
-                    height: screenHeight * 0.025,
-                    tintColor: focused ? "#fff" : "#0000008C",
-                  }}
-                  resizeMode="contain"
-                />
-                <Text
-                  style={{
-                    color: focused ? "#FFFFFF" : "#0000008C",
-                    fontSize: 12,
-                    fontWeight: focused ? "600" : "600",
-                    textAlign: "center",
-                    marginTop: 6,
-                  }}
-                >
-                  {"Profile"}
-                </Text>
-              </View>
-            </View>
+            <TabIcon icon={UserCircleIcon} label="Profile" focused={focused} />
           ),
         }}
       />
+      {/* Coins screen: accessible via deep link, not a tab */}
+      <Tabs.Screen name="Coins/index" options={{ href: null }} />
     </Tabs>
   );
 }
+
+const s = StyleSheet.create({
+  tabBar: {
+    backgroundColor: "#110820",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.06)",
+    height: verticalScale(60),
+    paddingTop: verticalScale(4),
+    elevation: 0,
+    shadowOpacity: 0,
+  },
+  tabItem: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pill: {
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(5),
+    borderRadius: scale(20),
+    gap: verticalScale(2),
+  },
+  pillActive: {
+    backgroundColor: "#7C3AED",
+  },
+  label: {
+    fontFamily: "Poppins-Regular",
+    fontSize: moderateScale(9),
+    color: "rgba(255,255,255,0.40)",
+    textAlign: "center",
+  },
+  labelActive: {
+    color: "#FFFFFF",
+    fontFamily: "Poppins-Medium",
+  },
+});
