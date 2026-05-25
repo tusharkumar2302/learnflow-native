@@ -13,6 +13,7 @@ expo-env.d.ts
 .kotlin/
 *.orig.*
 *.jks
+*.bak.jks
 *.p8
 *.p12
 *.key
@@ -21,6 +22,11 @@ expo-env.d.ts
 *.cer
 *.pfx
 *.keystore
+
+# Build artifacts
+ios/build/
+android/build/
+android/app/build/
 
 # Metro
 .metro-health-check*
