@@ -1,4 +1,4 @@
-import { useRedeemStore } from "@/stores/Coin/coinStore";
+import { useRedeemStore } from "@/stores/coinStore";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,

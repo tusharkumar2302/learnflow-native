@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useFocusEffect } from "expo-router";
-import { courseService } from "@/lib/services";
+import { courseService } from "@/services";
 import { CourseSummary, CourseListParams } from "@/services/interfaces/ICourseService";
 
 export function useCourses(params: CourseListParams = {}) {

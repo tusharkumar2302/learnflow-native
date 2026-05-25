@@ -1,4 +1,4 @@
-import { authService } from "@/lib/services";
+import { authService } from "@/services";
 import { authStore } from "@/stores/authStore";
 import { HugeiconsIcon } from "@hugeicons/react-native";
 import { EyeIcon, ViewOffSlashIcon } from "@hugeicons/core-free-icons";

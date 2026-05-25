@@ -1,6 +1,6 @@
 import ScreenHeader from "@/components/common/ScreenHeader";
 import { localNotes } from "@/services/local/data/notes";
-import { useCourseStore } from "@/stores/Course/courseStore";
+import { useCourseStore } from "@/stores/courseStore";
 import { useRouter } from "expo-router";
 import React from "react";
 import {

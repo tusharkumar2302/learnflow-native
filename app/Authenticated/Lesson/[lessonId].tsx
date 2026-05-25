@@ -1,6 +1,6 @@
 import QuizSheet from "@/components/ui/Learn/QuizSheet";
 import { useLesson } from "@/hooks/useLearn";
-import { learnService } from "@/lib/services";
+import { learnService } from "@/services";
 import { useEvent } from "expo";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { useLocalSearchParams, useRouter } from "expo-router";

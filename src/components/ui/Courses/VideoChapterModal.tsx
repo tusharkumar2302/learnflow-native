@@ -1,6 +1,6 @@
 import PrimaryPopUp from "@/components/Courses_Player/Buttons/PrimaryPopUp";
 import PopUpBg from "@/components/Courses_Player/PopUpBg";
-import { courseService } from "@/lib/services";
+import { courseService } from "@/services";
 import React, { useState } from "react";
 import { Alert, Image, StyleSheet, Text, View } from "react-native";
 

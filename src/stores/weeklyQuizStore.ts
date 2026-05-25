@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { quizService } from "@/lib/services";
+import { quizService } from "@/services";
 import {
   WeeklyQuizSummary,
   LeaderboardEntry,

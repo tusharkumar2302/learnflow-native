@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { authService } from "@/lib/services";
+import { authService } from "@/services";
 import { UserProfile } from "@/services/interfaces/IAuthService";
 
 export function useProfile() {

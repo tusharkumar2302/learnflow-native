@@ -1,11 +1,11 @@
-import { authService } from "@/lib/services";
+import { authService } from "@/services";
 import { authStore } from "@/stores/authStore";
-import { useRedeemStore } from "@/stores/Coin/coinStore";
-import { useCourseStore } from "@/stores/Course/courseStore";
+import { useRedeemStore } from "@/stores/coinStore";
+import { useCourseStore } from "@/stores/courseStore";
 import currentVid from "@/stores/currentVid";
 import quizStore from "@/stores/quizStore";
-import { useWalletStore } from "@/stores/Wallet/walletStore";
-import { useWeeklyQuizStore } from "@/stores/WeeklyQuiz/weeklyQuiz";
+import { useWalletStore } from "@/stores/walletStore";
+import { useWeeklyQuizStore } from "@/stores/weeklyQuizStore";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";

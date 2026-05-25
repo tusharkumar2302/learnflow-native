@@ -1,4 +1,4 @@
-import { authService } from "@/lib/services";
+import { authService } from "@/services";
 import { authStore } from "@/stores/authStore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";

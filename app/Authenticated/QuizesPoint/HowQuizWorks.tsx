@@ -1,5 +1,5 @@
 import QuizHeader from "@/components/Quiz/Header";
-import { useCourseStore } from "@/stores/Course/courseStore";
+import { useCourseStore } from "@/stores/courseStore";
 import quizStore from "@/stores/quizStore";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React from "react";

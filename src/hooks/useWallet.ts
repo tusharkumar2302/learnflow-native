@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { walletService } from "@/lib/services";
+import { walletService } from "@/services";
 import { WalletSummary } from "@/services/interfaces/IWalletService";
 
 export function useWallet(page = 1) {

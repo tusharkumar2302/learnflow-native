@@ -1,4 +1,4 @@
-import { learnService } from "@/lib/services";
+import { learnService } from "@/services";
 import { LearningPath, Lesson, PathDetail } from "@/services/interfaces/ILearnService";
 import { useCallback, useEffect, useState } from "react";
 

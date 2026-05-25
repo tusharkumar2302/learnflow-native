@@ -1,5 +1,5 @@
 import PopUpBg from "@/components/Courses_Player/PopUpBg";
-import { useCourseStore } from "@/stores/Course/courseStore";
+import { useCourseStore } from "@/stores/courseStore";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {

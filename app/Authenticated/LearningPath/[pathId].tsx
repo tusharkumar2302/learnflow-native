@@ -1,6 +1,6 @@
 import LessonRow from "@/components/ui/Learn/LessonRow";
 import { useLearningPath } from "@/hooks/useLearn";
-import { learnService } from "@/lib/services";
+import { learnService } from "@/services";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback } from "react";
 import {

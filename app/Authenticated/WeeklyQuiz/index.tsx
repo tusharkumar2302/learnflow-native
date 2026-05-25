@@ -1,4 +1,4 @@
-import { useWeeklyQuizStore } from "@/stores/WeeklyQuiz/weeklyQuiz";
+import { useWeeklyQuizStore } from "@/stores/weeklyQuizStore";
 import { QuizSubmitResult } from "@/services/interfaces/IQuizService";
 import { HugeiconsIcon } from "@hugeicons/react-native";
 import { ArrowLeft01Icon } from "@hugeicons/core-free-icons";

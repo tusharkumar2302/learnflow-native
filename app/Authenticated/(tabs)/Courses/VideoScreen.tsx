@@ -1,8 +1,8 @@
 import LoadingSpinner from "@/components/common/LoadingSpinner";
 import VideoPlayer3 from "@/components/Courses_Player/VideoPlayer3";
 import VideoPlayerRNV from "@/components/Courses_Player/VideoPlayerRNV";
-import { progressService, walletService } from "@/lib/services";
-import { useCourseStore } from "@/stores/Course/courseStore";
+import { progressService, walletService } from "@/services";
+import { useCourseStore } from "@/stores/courseStore";
 import { HugeiconsIcon } from "@hugeicons/react-native";
 import { CheckmarkCircle01Icon, HelpCircleIcon } from "@hugeicons/core-free-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";

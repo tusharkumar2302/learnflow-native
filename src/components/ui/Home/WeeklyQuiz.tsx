@@ -1,4 +1,4 @@
-import { useWeeklyQuizStore } from "@/stores/WeeklyQuiz/weeklyQuiz";
+import { useWeeklyQuizStore } from "@/stores/weeklyQuizStore";
 import { formatDate, isQuizLive, isQuizUpcoming, timeLeft } from "@/utils/date";
 import { router } from "expo-router";
 import React, { useEffect } from "react";

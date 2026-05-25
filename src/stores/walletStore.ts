@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { walletService } from "@/lib/services";
+import { walletService } from "@/services";
 import { WalletSummary } from "@/services/interfaces/IWalletService";
 
 interface WalletStore {
