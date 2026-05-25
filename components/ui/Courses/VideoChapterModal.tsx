@@ -1,59 +1,41 @@
 import PrimaryPopUp from "@/components/Courses_Player/Buttons/PrimaryPopUp";
 import PopUpBg from "@/components/Courses_Player/PopUpBg";
-import { authStore } from "@/stores/authStore";
-import axios from "axios";
+import { courseService } from "@/lib/services";
 import React, { useState } from "react";
 import { Alert, Image, StyleSheet, Text, View } from "react-native";
 
-interface WorkingPopuopProps {
+interface VideoChapterModalProps {
   onClose: () => void;
   courseId: string | string[];
   isEnrolled: boolean;
 }
 
-const WorkingPopuop = ({
-  onClose,
-  courseId,
-  isEnrolled,
-}: WorkingPopuopProps) => {
+const VideoChapterModal = ({ onClose, courseId, isEnrolled }: VideoChapterModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
-  const { token } = authStore();
 
   const handleEnroll = async () => {
     if (isEnrolled) {
       onClose();
       return;
     }
-
     setIsLoading(true);
     try {
-      const res = await axios.post(
-        `${process.env.EXPO_PUBLIC_API_URL}/api/user/courses/${courseId}/enroll`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      console.log("Enrollment successful:", res.data);
+      await courseService.enrollCourse(courseId as string);
       onClose();
-    } catch (error: any) {
-      console.error("Enrollment error:", error.response?.data || error);
-      Alert.alert(
-        "Enrollment Failed",
-        error.response?.data?.message ||
-          "Failed to enroll in the course. Please try again."
-      );
+    } catch (error: unknown) {
+      const message =
+        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        "Failed to enroll in the course. Please try again.";
+      Alert.alert("Enrollment Failed", message);
     } finally {
       setIsLoading(false);
     }
   };
+
   return (
     <PopUpBg visible={true}>
       <View style={styles.container}>
-        <Text style={styles.title}>How ZuperLearn {"\n"} Works?</Text>
+        <Text style={styles.title}>How Zuper Learn{"\n"}Works?</Text>
 
         <View style={styles.rowContainer}>
           <View>
@@ -97,7 +79,7 @@ const WorkingPopuop = ({
               resizeMode="center"
             />
             <Text style={styles.rowTxt}>
-              Redeem Earned {"\n"} Coins in Zuperior
+              Redeem Coins{"\n"}for Rewards
             </Text>
           </View>
         </View>
@@ -121,14 +103,12 @@ const WorkingPopuop = ({
   );
 };
 
-export default WorkingPopuop;
+export default VideoChapterModal;
 
 const styles = StyleSheet.create({
   container: {
     alignItems: "center",
     padding: 20,
-    // borderWidth: 2, 
-    // borderColor: '#000'
   },
   title: {
     textAlign: "center",

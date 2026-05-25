@@ -2,9 +2,12 @@ import { useEvent } from "expo";
 import { useVideoPlayer, VideoPlayer, VideoView } from "expo-video";
 import { useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   AppState,
   AppStateStatus,
   Platform,
+  StyleSheet,
+  Text,
   useWindowDimensions,
   View,
 } from "react-native";
@@ -165,7 +168,6 @@ function useLinearVideoPlayback({
 
   useEffect(() => {
     if (isPlayerReady && player.duration > MIN_DURATION_THRESHOLD) {
-      console.log("⏱️ Duration synced:", player.duration);
       durationRef.current = player.duration;
     }
   }, [isPlayerReady, player.duration, player]);
@@ -220,18 +222,8 @@ function useLinearVideoPlayback({
       duration > 0 &&
       currentTime >= duration * IOS_COMPLETION_THRESHOLD
     ) {
-      console.log("🍎 iOS: Video near end detected via time tracking", {
-        currentTime,
-        duration,
-        threshold: duration * IOS_COMPLETION_THRESHOLD,
-        maxWatched: maxWatchedRef.current,
-      });
-
-      // For incomplete videos, verify user watched enough
       if (!isCompleted && maxWatchedRef.current < duration * 0.9) {
-        console.log("⚠️ iOS: User hasn't watched enough, not marking complete");
       } else {
-        console.log("✅ iOS: Triggering completion from time tracking");
 
         // Mark as completed to prevent duplicate calls
         hasCompletedRef.current = true;
@@ -252,7 +244,6 @@ function useLinearVideoPlayback({
         onProgressRef.current?.(duration);
 
         // Trigger completion callback
-        console.log("🚀 iOS: Calling onComplete from time tracking");
         onCompleteRef.current?.();
       }
     }
@@ -278,17 +269,8 @@ function useLinearVideoPlayback({
     if (!player || !isPlayerReady) return;
 
     const handlePlayToEnd = () => {
-      console.log("🎬 handlePlayToEnd fired!", {
-        hasCompleted: hasCompletedRef.current,
-        duration: durationRef.current,
-        maxWatched: maxWatchedRef.current,
-        isCompleted,
-        videoFinished: videoFinishedRef.current,
-      });
-
       // Guard against multiple completion calls
       if (hasCompletedRef.current) {
-        console.log("⚠️ Already completed, skipping");
         return;
       }
 
@@ -298,17 +280,12 @@ function useLinearVideoPlayback({
       // For incomplete videos, check if user actually watched enough
       // Only reset if they skipped significantly (watched less than 90% of video)
       if (!isCompleted && duration > 0 && maxWatched < duration * 0.9) {
-        console.log(
-          "⚠️ User hasn't watched enough, resetting to maxWatched:",
-          maxWatched
-        );
         // Reset to max watched and continue playing
         player.currentTime = maxWatched;
         player.play();
         return;
       }
 
-      console.log("✅ Video completion criteria met, calling onComplete");
 
       // Mark as completed to prevent duplicate calls
       hasCompletedRef.current = true;
@@ -332,14 +309,8 @@ function useLinearVideoPlayback({
       onProgressRef.current?.(maxWatchedRef.current);
 
       // Trigger completion callback (this will call the API)
-      console.log("🚀 Calling onCompleteRef.current:", !!onCompleteRef.current);
       onCompleteRef.current?.();
     };
-
-    console.log(
-      "📺 Setting up playToEnd listener, isPlayerReady:",
-      isPlayerReady
-    );
 
     // Subscribe to events
     const playToEndSub = player.addListener("playToEnd", handlePlayToEnd);
@@ -434,7 +405,6 @@ export default function VideoPlayer3({
     const reinforceNoLoop = () => {
       try {
         if (player.loop) {
-          console.log("🍎 iOS: Resetting loop to false");
           player.loop = false;
         }
       } catch {
@@ -494,7 +464,6 @@ export default function VideoPlayer3({
   // iOS-specific: Catch and prevent unwanted replay
   useEffect(() => {
     if (Platform.OS === "ios" && videoFinishedRef.current && isPlaying) {
-      console.log("🍎 iOS: Preventing unwanted replay after completion");
       try {
         player.pause();
         player.loop = false;
@@ -507,16 +476,9 @@ export default function VideoPlayer3({
   useEffect(() => {
     if (!isMountedRef.current) return;
 
-    console.log("📊 Player status changed:", status, {
-      isPlayerReady,
-      videoFinished: videoFinishedRef.current,
-      platform: Platform.OS,
-    });
-
     // Handle video reaching "idle" status (finished playing)
     // THIS IS WHERE WE DETECT VIDEO COMPLETION since playToEnd event is unreliable
     if (status === "idle" && isPlayerReady && !videoFinishedRef.current) {
-      console.log("🏁 Video reached idle status - THIS IS COMPLETION!");
 
       // Mark as finished FIRST to prevent any restart
       videoFinishedRef.current = true;
@@ -530,7 +492,6 @@ export default function VideoPlayer3({
       }
 
       // Trigger the onComplete callback - this is the key!
-      console.log("🚀 Calling onComplete from idle status");
       onComplete?.();
 
       return; // Don't process further
@@ -538,7 +499,6 @@ export default function VideoPlayer3({
 
     // Prevent restart: if video finished and status goes back to readyToPlay, stop it
     if (status === "readyToPlay" && videoFinishedRef.current) {
-      console.log("🛑 Preventing restart - video already finished");
       try {
         player.pause();
         player.loop = false;
@@ -549,7 +509,6 @@ export default function VideoPlayer3({
     }
 
     if (status === "readyToPlay" && !isPlayerReady) {
-      console.log("▶️ Player ready to play, starting...");
       // Reset finished flag for new video
       videoFinishedRef.current = false;
 
@@ -630,8 +589,23 @@ export default function VideoPlayer3({
   // Render
   // -------------------------------------------------------------------------
 
+  const vp3s = StyleSheet.create({
+    loadingOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: "#0A0614",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 12,
+    },
+    loadingText: {
+      fontFamily: "Poppins-Regular",
+      fontSize: 13,
+      color: "rgba(255,255,255,0.50)",
+    },
+  });
+
   return (
-    <View style={{ width: screenWidth, height: videoHeight }}>
+    <View style={{ width: screenWidth, height: videoHeight, backgroundColor: "#000" }}>
       <VideoView
         player={player}
         style={{ width: "100%", height: "100%" }}
@@ -640,6 +614,12 @@ export default function VideoPlayer3({
         allowsPictureInPicture={false}
         requiresLinearPlayback={!isCompleted}
       />
+      {!isPlayerReady && (
+        <View style={vp3s.loadingOverlay}>
+          <ActivityIndicator size="large" color="#A78BFA" />
+          <Text style={vp3s.loadingText}>Loading video…</Text>
+        </View>
+      )}
     </View>
   );
 }

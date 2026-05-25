@@ -45,9 +45,9 @@ const CoinsWalletCard: React.FC<CoinsWalletCardProps> = ({
       >
         {/* Title */}
         <Text className="text-white text-[18px] font-teachers-medium mb-2 px-[18px] py-[9px] border-b border-white border-dashed">
-          {screen === "profile" ? "Wallet" : "Coins Wallet"}
+          Wallet
         </Text>
-        <View className="flex flex-row px-4 ">
+        <View className="flex flex-row px-4">
           <View className="w-[65%]">
             {/* Coin Amount */}
             <View className="flex flex-row items-end mt-[8px]">
@@ -61,39 +61,15 @@ const CoinsWalletCard: React.FC<CoinsWalletCardProps> = ({
                 Coins
               </Text>
             </View>
-            {screen == "coins" && (
-              <>
-                {/* Progress Bar 
-                <View className="flex-col mt-[4px]">
-                  <View className="flex-row justify-between ">
-                    <Text className="font-teachers-semibold text-[14px] text-white">
-                      {coins}
-                    </Text>
-                    <Text className="font-teachers-semibold text-[14px] text-white">
-                      {maxCoins}
-                    </Text>
-                  </View>
-                  <View className="h-3 bg-white rounded-full mt-[3px] pl-1 justify-center ">
-                    <View
-                      className="h-2 bg-[#C06EFF] rounded-full "
-                      style={{ width: `${Math.min(progress, 100)}%` }}
-                    />
-                  </View>
-                </View>*/}
-                {/* Milestone Text 
-                <Text className="text-[#FFFFFFD9] font-teachers-medium text-[11px] mt-1">
-                  *Reach {maxCoins.toLocaleString()} Coins to Redeem PropFirms
-                </Text>*/}
-                {/* Additional Stats */}
-                <View className="flex-col justify-between mt-4">
-                  <Text className="text-[#FFFFFFB2] font-teachers-medium text-[16px]">
-                    Total Earned: {totalEarned}
-                  </Text>
-                  <Text className="text-[#FFFFFFB2] font-teachers-medium text-[16px]">
-                    Total Redeemed: {totalRedeemed}
-                  </Text>
-                </View>
-              </>
+            {screen === "coins" && (
+              <View className="flex-col justify-between mt-4">
+                <Text className="text-[#FFFFFFB2] font-teachers-medium text-[16px]">
+                  Total Earned: {totalEarned}
+                </Text>
+                <Text className="text-[#FFFFFFB2] font-teachers-medium text-[16px]">
+                  Total Redeemed: {totalRedeemed}
+                </Text>
+              </View>
             )}
           </View>
           <View className="flex-1 flex ml-4">

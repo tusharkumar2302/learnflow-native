@@ -1,9 +1,10 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFonts } from "expo-font";
 import { router } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 
 import { authStore } from "@/stores/authStore";
-import { seedIfNeeded } from "@/services/mock/seedService";
+import { seedIfNeeded } from "@/services/local/seedService";
 import Splash from "./splash/Splash";
 
 const Index = () => {
@@ -39,8 +40,8 @@ const Index = () => {
       try {
         await seedIfNeeded();
         await authStore.getState().loadToken();
-      } catch (error) {
-        console.error("Error initializing app:", error);
+      } catch {
+        // init errors are non-fatal — app proceeds to auth
       } finally {
         setIsInitializing(false);
       }
@@ -66,15 +67,22 @@ const Index = () => {
 
     hasNavigated.current = true;
 
-    const { token, isAuthenticated } = authStore.getState();
+    const navigate = async () => {
+      const { token, isAuthenticated } = authStore.getState();
 
-    if (isAuthenticated && token) {
-      console.log("✅ User authenticated, redirecting to Home");
-      router.replace("/Authenticated/(tabs)/Home");
-    } else {
-      console.log("ℹ️ User not authenticated, redirecting to Auth");
-      router.replace("/Authentication/Auth");
-    }
+      if (isAuthenticated && token) {
+        router.replace("/Authenticated/(tabs)/Home");
+      } else {
+        const hasOnboarded = await AsyncStorage.getItem("hasOnboarded");
+        if (!hasOnboarded) {
+          router.replace("/splash/OnBording");
+        } else {
+          router.replace("/Authentication/login");
+        }
+      }
+    };
+
+    navigate();
   }, [showSplash, fontsLoaded, isInitializing]);
 
   // Show splash while initializing

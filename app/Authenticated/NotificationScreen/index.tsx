@@ -1,6 +1,6 @@
 import Header from "@/components/common/Header";
-import { Ionicons } from "@expo/vector-icons";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { HugeiconsIcon } from "@hugeicons/react-native";
+import { ArrowLeft01Icon, Notification01Icon } from "@hugeicons/core-free-icons";
 import { useRouter } from "expo-router";
 import React from "react";
 import {
@@ -59,7 +59,7 @@ export default function NotificationScreen() {
             }}
             className="p-2 bg-[#FFFFFF59] rounded-full  h-12 w-12 items-center justify-center"
           >
-            <MaterialIcons name="keyboard-arrow-left" size={24} color="black" />
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={24} color="black" strokeWidth={2} />
           </TouchableOpacity>
         }
         center={<></>}
@@ -68,7 +68,7 @@ export default function NotificationScreen() {
             onPress={() => {}}
             className="p-2 bg-[#FFFFFF59] rounded-full "
           >
-            <Ionicons name="notifications-outline" size={24} color="black" />
+            <HugeiconsIcon icon={Notification01Icon} size={24} color="black" strokeWidth={1.5} />
           </TouchableOpacity>
         }
       />

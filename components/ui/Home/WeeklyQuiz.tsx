@@ -1,4 +1,3 @@
-import { USE_MOCK } from "@/config";
 import { useWeeklyQuizStore } from "@/stores/WeeklyQuiz/weeklyQuiz";
 import { formatDate, isQuizLive, isQuizUpcoming, timeLeft } from "@/utils/date";
 import { router } from "expo-router";
@@ -13,42 +12,30 @@ import {
   View,
 } from "react-native";
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
+const { width: screenWidth } = Dimensions.get("window");
 
 export default function WeeklyQuizCard() {
   const { activeQuiz, fetchActiveQuiz, isLoading } = useWeeklyQuizStore();
-  const quiz = activeQuiz?.quiz;
 
   useEffect(() => {
-    // Skip in mock/demo mode — store uses legacy axios, would throw error toast
-    if (USE_MOCK) return;
     if (!activeQuiz) fetchActiveQuiz();
   }, []);
 
-  // No quiz data in mock mode — render nothing cleanly
-  if (USE_MOCK) return null;
-
   if (isLoading) {
     return (
-      <View
-        style={[
-          styles.loadingContainer,
-          { width: screenWidth * 0.88, alignSelf: "center" },
-        ]}
-      >
+      <View style={[styles.loadingContainer, { width: screenWidth * 0.88, alignSelf: "center" }]}>
         <ActivityIndicator size="small" color="#563FA5" />
         <Text style={styles.loadingText}>Loading quiz...</Text>
       </View>
     );
   }
 
-  if (!quiz) {
-    return <></>;
-  }
+  if (!activeQuiz) return <></>;
 
-  const live = isQuizLive(quiz.startDate, quiz.endDate);
-  const upcoming = isQuizUpcoming(quiz.startDate);
-  const countdown = upcoming ? timeLeft(quiz.startDate) : null;
+  const live = isQuizLive(activeQuiz.startDate, activeQuiz.endDate);
+  const upcoming = isQuizUpcoming(activeQuiz.startDate);
+  const countdown = upcoming ? timeLeft(activeQuiz.startDate) : null;
+  const maxScore = activeQuiz.totalQuestions * 20;
 
   return (
     <TouchableOpacity
@@ -57,50 +44,31 @@ export default function WeeklyQuizCard() {
       style={{ width: screenWidth * 0.88, alignSelf: "center" }}
     >
       <View style={styles.container}>
-        {/* Title & Description */}
-        <Text style={styles.title} numberOfLines={1}>
-          {quiz.title}
-        </Text>
+        <Text style={styles.title} numberOfLines={1}>{activeQuiz.title}</Text>
         <Text style={styles.subtitle} numberOfLines={2}>
-          {quiz.description || "Weekly challenge – earn coins!"}
+          {activeQuiz.description || "Weekly challenge – earn coins!"}
         </Text>
-
-        {/* Date */}
         <Text style={styles.dateTime}>
-          {formatDate(quiz.startDate, "d MMM, h:mm a")} –{" "}
-          {formatDate(quiz.endDate, "h:mm a")}
+          {formatDate(activeQuiz.startDate, "d MMM, h:mm a")} –{" "}
+          {formatDate(activeQuiz.endDate, "h:mm a")}
         </Text>
-
-        {/* Info Row */}
         <View style={styles.infoRow}>
           <Text style={styles.infoText}>
-            {quiz.totalQuestions}{" "}
-            {quiz.totalQuestions === 1 ? "Question" : "Questions"}
+            {activeQuiz.totalQuestions} {activeQuiz.totalQuestions === 1 ? "Question" : "Questions"}
           </Text>
           <Text style={styles.infoText}>
-            {quiz.maxScore} Points • {quiz.passingScore}% Pass
+            {maxScore} Points • {activeQuiz.passingScore}% Pass
           </Text>
         </View>
-
-        {/* Bottom Row: Award + Status Badge */}
         <View style={styles.bottomRow}>
-          {/* Award Box */}
           <View style={styles.rewardBox}>
-            <Image
-              source={require("@/assets/icons/Coins/trophy.png")}
-              style={styles.trophy}
-            />
+            <Image source={require("@/assets/icons/Coins/trophy.png")} style={styles.trophy} />
             <Text style={styles.rewardLabel}>Award</Text>
             <View style={styles.coinBadge}>
-              <Image
-                source={require("@/assets/icons/Coins/coin.png")}
-                style={styles.coinIcon}
-              />
-              <Text style={styles.coinText}>{quiz.coinReward}</Text>
+              <Image source={require("@/assets/icons/Coins/coin.png")} style={styles.coinIcon} />
+              <Text style={styles.coinText}>{activeQuiz.coinReward}</Text>
             </View>
           </View>
-
-          {/* Right Side: LIVE or Countdown */}
           <View style={styles.statusBadgeContainer}>
             {live && (
               <View style={[styles.badge, styles.liveBadge]}>
@@ -108,7 +76,6 @@ export default function WeeklyQuizCard() {
                 <Text style={styles.liveText}>LIVE</Text>
               </View>
             )}
-
             {upcoming && (
               <View style={[styles.badge, styles.upcomingBadge]}>
                 <Text style={styles.upcomingText}>Starts in</Text>
@@ -117,13 +84,9 @@ export default function WeeklyQuizCard() {
             )}
           </View>
         </View>
-
-        {/* Completed Badge (Top Right) */}
-        {activeQuiz?.hasSubmitted && (
+        {activeQuiz.hasSubmitted && (
           <View style={styles.completedBadge}>
-            <Text style={styles.completedText}>
-              {activeQuiz.submission?.passed ? "Passed" : "Completed"}
-            </Text>
+            <Text style={styles.completedText}>Completed</Text>
           </View>
         )}
       </View>
@@ -208,8 +171,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#730A96",
   },
-
-  // Unified Badge Style (Same Height!)
   badge: {
     flexDirection: "row",
     alignItems: "center",
@@ -217,7 +178,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 16,
-    minHeight: 48, // ← Ensures same height
+    minHeight: 48,
     gap: 8,
   },
   statusBadgeContainer: {
@@ -253,7 +214,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#563FA5",
   },
-
   completedBadge: {
     position: "absolute",
     top: 14,
@@ -276,12 +236,5 @@ const styles = StyleSheet.create({
     marginTop: 10,
     color: "#666",
     fontFamily: "Poppins-Regular",
-  },
-  noQuizText: {
-    textAlign: "center",
-    color: "#999",
-    fontFamily: "Poppins-Medium",
-    fontSize: 16,
-    padding: 30,
   },
 });

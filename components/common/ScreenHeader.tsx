@@ -1,4 +1,5 @@
-import { Ionicons } from "@expo/vector-icons";
+import { HugeiconsIcon } from "@hugeicons/react-native";
+import { ArrowLeft01Icon } from "@hugeicons/core-free-icons";
 import { useRouter } from "expo-router";
 import React, { memo, ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View, ViewStyle } from "react-native";
@@ -36,7 +37,7 @@ const ScreenHeader = memo(
           style={styles.backButton}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons name="chevron-back" color="#000000D9" size={24} />
+          <HugeiconsIcon icon={ArrowLeft01Icon} color="#000000D9" size={24} strokeWidth={2} />
         </Pressable>
 
         <View style={styles.titleContainer}>

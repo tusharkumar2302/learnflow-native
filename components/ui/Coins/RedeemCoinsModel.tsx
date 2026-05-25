@@ -16,7 +16,7 @@ interface RedeemModalProps {
   onClose: () => void;
   currentBalance: number;
   subscriptionTier: string;
-  mt5Accounts: {
+  mt5Accounts?: {
     id: string;
     accountId: string;
     package: string;
@@ -45,7 +45,7 @@ export default function RedeemCoinsModal({
   onSuccess,
 }: RedeemModalProps) {
   const [coinsToRedeem, setCoinsToRedeem] = useState("");
-  const [zuperiorAccountNumber, setZuperiorAccountNumber] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
   const [estimatedAmount, setEstimatedAmount] = useState(0);
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState<string | null>(null);
@@ -101,21 +101,21 @@ export default function RedeemCoinsModal({
       );
       return;
     }
-    if (!zuperiorAccountNumber.trim()) {
-      Alert.alert("Required", "Please enter your Zuperior Account Number");
+    if (!accountNumber.trim()) {
+      Alert.alert("Required", "Please enter your Account Number");
       return;
     }
 
     try {
-      await createRedeemRequest(numCoins, zuperiorAccountNumber.trim());
+      await createRedeemRequest(numCoins, accountNumber.trim());
 
       // Close this modal first
       onClose();
 
       // Call onSuccess to show the success modal
       onSuccess?.();
-    } catch (err: any) {
-      // error already shown via useEffect
+    } catch {
+      // error surfaced via store.error → useEffect above
     }
   };
 
@@ -123,7 +123,7 @@ export default function RedeemCoinsModal({
   useEffect(() => {
     if (!visible) {
       setCoinsToRedeem("");
-      setZuperiorAccountNumber("");
+      setAccountNumber("");
       setEstimatedAmount(0);
     }
   }, [visible]);
@@ -175,9 +175,9 @@ export default function RedeemCoinsModal({
 
           {/* <TextInput
             className="border border-gray-300 rounded-xl px-4 py-4 mb-4 text-base"
-            placeholder="Zuperior Account Number (required)"
-            value={zuperiorAccountNumber}
-            onChangeText={setZuperiorAccountNumber}
+            placeholder="Account Number (required)"
+            value={accountNumber}
+            onChangeText={setAccountNumber}
             placeholderTextColor="#9CA3AF"
             autoCapitalize="characters"
           /> */}
@@ -188,13 +188,13 @@ export default function RedeemCoinsModal({
               value={value}
               items={items}
               setOpen={setOpen}
-              setValue={(val) => {
-                const selected = val();
-                setValue(selected);
-                setZuperiorAccountNumber(selected as string);
+              setValue={(callback) => {
+                const next = typeof callback === "function" ? callback(value) : callback;
+                setValue(next);
+                setAccountNumber((next ?? "") as string);
               }}
               setItems={setItems}
-              placeholder="Select Zuperior Account"
+              placeholder="Select account"
               placeholderStyle={{
                 color: "#9CA3AF",
               }}
@@ -234,10 +234,10 @@ export default function RedeemCoinsModal({
             <TouchableOpacity
               onPress={handleSubmit}
               disabled={
-                isLoading || !coinsToRedeem || !zuperiorAccountNumber.trim()
+                isLoading || !coinsToRedeem || !accountNumber.trim()
               }
               className={`flex-1 py-4 rounded-xl ${
-                isLoading || !coinsToRedeem || !zuperiorAccountNumber.trim()
+                isLoading || !coinsToRedeem || !accountNumber.trim()
                   ? "bg-gray-400"
                   : "bg-[#730A96]"
               }`}

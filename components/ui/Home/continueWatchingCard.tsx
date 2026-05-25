@@ -59,7 +59,7 @@ const ContinueWatchingCard = ({ continueTxt = true }: { continueTxt?: boolean })
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setVidId(item.courseId);
     router.push({
-      pathname: "/Authenticated/(tabs)/Courses/CouseVideos",
+      pathname: "/Authenticated/(tabs)/Courses/CourseDetail",
       params: { id: item.courseId },
     });
   };

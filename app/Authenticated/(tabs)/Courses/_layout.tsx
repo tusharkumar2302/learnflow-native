@@ -5,7 +5,7 @@ export default function CoursesLayout() {
     <Stack>
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen
-        name="CouseVideos"
+        name="CourseDetail"
         options={{ title: "Course Details", headerShown: false }}
       />
       <Stack.Screen

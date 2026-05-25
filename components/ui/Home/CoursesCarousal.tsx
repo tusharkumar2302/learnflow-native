@@ -115,8 +115,8 @@ export default function CoursesCarousel({
                 }}
                 image={item.thumbnail}
                 orientation={orientation}
-                courses="all"
                 totalCoins={item.totalCoins}
+                progressPercentage={item.userProgress?.progressPercentage ?? 0}
               />
             )}
             ListEmptyComponent={

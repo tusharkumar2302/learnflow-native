@@ -1,45 +1,34 @@
 import LoadingSpinner from "@/components/common/LoadingSpinner";
 import VideoPlayer3 from "@/components/Courses_Player/VideoPlayer3";
 import VideoPlayerRNV from "@/components/Courses_Player/VideoPlayerRNV";
-import { authStore } from "@/stores/authStore";
+import { progressService, walletService } from "@/lib/services";
 import { useCourseStore } from "@/stores/Course/courseStore";
-import { Chapter } from "@/types/Course";
-import { AntDesign } from "@expo/vector-icons";
+import { HugeiconsIcon } from "@hugeicons/react-native";
+import { CheckmarkCircle01Icon, HelpCircleIcon } from "@hugeicons/core-free-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { NavigationProp } from "@react-navigation/native";
-import axios from "axios";
 import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
-// import { usePreventScreenCapture } from "expo-screen-capture";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Alert,
-  Linking,
+  Image,
   Platform,
   Pressable,
   ScrollView,
+  StyleSheet,
   Text,
-  TouchableOpacity,
   View,
   useWindowDimensions,
 } from "react-native";
 
-// ============================================================================
-// Constants (moved outside component to avoid recreation)
-// ============================================================================
-
-// Debounce interval for backend progress sync (in milliseconds)
 const PROGRESS_SYNC_DEBOUNCE_MS = 5000;
 
-/**
- * Format file size from bytes to human-readable string
- */
-const formatFileSize = (bytes: number): string => {
-  if (bytes === 0) return "0 Bytes";
-  const k = 1024;
-  const sizes = ["Bytes", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-};
+function formatDuration(seconds: number): string {
+  const mins = Math.round(seconds / 60);
+  if (mins < 60) return `${mins} min`;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+}
 
 type VideoScreenParams = {
   videoUrl?: string;
@@ -56,203 +45,92 @@ type VideoScreenNavigation = NavigationProp<{
 }>;
 
 export default function VideoScreen() {
-  // usePreventScreenCapture();
-  const { chapterId, thumbnail, courseId } =
-    useLocalSearchParams<VideoScreenParams>();
+  const { chapterId, thumbnail, courseId } = useLocalSearchParams<VideoScreenParams>();
   const navigation = useNavigation<VideoScreenNavigation>();
   const router = useRouter();
 
-  const { token } = authStore();
-  const {
-    currentCourse,
-    currentChapter,
-    setCurrentChapter,
-    updateChapterCompletion,
-  } = useCourseStore();
+  const { currentCourse, currentChapter, updateChapterCompletion } = useCourseStore();
 
-  const [activeTab, setActiveTab] = useState<"Summary" | "resources">(
-    "Summary"
-  );
   const [initialPositionMillis, setInitialPositionMillis] = useState<number>(0);
   const [isLoadingChapter, setIsLoadingChapter] = useState<boolean>(true);
 
-  // Use responsive dimensions that update on orientation change
   const { height: screenHeight } = useWindowDimensions();
 
-  // Refs for debounced progress syncing
   const lastSyncTimeRef = useRef<number>(0);
   const lastProgressRef = useRef<number>(0);
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleDocumentDownload = useCallback(
-    async (document: NonNullable<Chapter["documents"]>[number]) => {
-      try {
-        const supported = await Linking.canOpenURL(document.fileUrl);
-        if (supported) {
-          await Linking.openURL(document.fileUrl);
-        } else {
-          Alert.alert(
-            "Cannot Open Document",
-            `Unable to open ${document.title}. The file type may not be supported on this device.`
-          );
-        }
-      } catch {
-        Alert.alert("Error", "Failed to open the document. Please try again.");
-      }
-    },
-    []
-  );
-
-  const fetchChapterData = useCallback(async () => {
-    if (!chapterId || !token) return;
-
-    setIsLoadingChapter(true);
-    try {
-      const res = await axios.get(
-        `${process.env.EXPO_PUBLIC_API_URL}/api/user/chapters/${chapterId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      const chapterData = res.data.data.chapter;
-      console.log("📄 Fetched chapter data:", chapterData);
-      console.log("📊 Chapter completion status:", {
-        isCompleted: chapterData.isCompleted,
-        chapterCompleted: chapterData.chapterCompleted,
-        hasQuizzes: chapterData.quizzes?.length > 0,
-        quizzes: chapterData.quizzes,
-        result: chapterData.quizzes?.map((q: any) => q.userResult).passed,
-      });
-
-      if (!chapterData.videoUrl) {
-        Alert.alert("Error", "No video URL available for this chapter.");
-        return;
-      }
-
-      useCourseStore.getState().setCurrentChapterDirect(chapterData);
-    } catch {
-      Alert.alert("Error", "Failed to load chapter data. Please try again.");
-    } finally {
-      setIsLoadingChapter(false);
-    }
-  }, [chapterId, token]);
-
   useEffect(() => {
     if (chapterId) {
-      fetchChapterData();
+      setIsLoadingChapter(true);
+      useCourseStore.getState().setCurrentChapter(chapterId);
+      setIsLoadingChapter(false);
     }
-  }, [chapterId, fetchChapterData]);
+  }, [chapterId]);
 
-  // Local progress helpers
+  useEffect(() => {
+    if (!currentChapter || !currentCourse || !chapterId) return;
+    progressService.updateRecentChapter({
+      courseId: currentCourse.id,
+      courseTitle: currentCourse.title,
+      courseThumbnail: currentCourse.thumbnail ?? null,
+      category: currentCourse.category ?? "",
+      totalChapters: currentCourse.chapters.length,
+      chapterId: currentChapter.id,
+      chapterTitle: currentChapter.title,
+      chapterOrder: currentChapter.order,
+      currentTime: currentChapter.currentTime ?? 0,
+      progressPercentage: currentCourse.userProgress?.progressPercentage ?? 0,
+      lastWatchedAt: new Date().toISOString(),
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChapter?.id, currentCourse?.id]);
+
   const progressKey = React.useMemo(() => {
-    return courseId && chapterId
-      ? `videoProgress:${courseId}:${chapterId}`
-      : undefined;
+    return courseId && chapterId ? `videoProgress:${courseId}:${chapterId}` : undefined;
   }, [courseId, chapterId]);
 
   const loadSavedProgress = useCallback(async () => {
-    if (!courseId || !chapterId) return;
+    if (!progressKey) return;
     try {
-      // Try remote first
-      const baseUrl = process.env.EXPO_PUBLIC_API_URL;
-      let remoteMillis: number | undefined;
-      if (baseUrl && token) {
-        try {
-          const res = await axios.get(`${baseUrl}/api/video/progress`, {
-            params: { courseId, chapterId },
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          const m = res?.data?.data?.positionMillis;
-          if (typeof m === "number" && m >= 0) remoteMillis = m;
-        } catch {
-          // ignore remote errors
-        }
-      }
-
-      if (typeof remoteMillis === "number") {
-        setInitialPositionMillis(remoteMillis);
-        if (progressKey)
-          await AsyncStorage.setItem(progressKey, String(remoteMillis));
-        return;
-      }
-
-      // Fallback to local
-      if (progressKey) {
-        const local = await AsyncStorage.getItem(progressKey);
-        const parsed = local ? parseInt(local, 10) : 0;
-        setInitialPositionMillis(Number.isFinite(parsed) ? parsed : 0);
-      }
+      const local = await AsyncStorage.getItem(progressKey);
+      const parsed = local ? parseInt(local, 10) : 0;
+      setInitialPositionMillis(Number.isFinite(parsed) ? parsed : 0);
     } catch {
       setInitialPositionMillis(0);
     }
-  }, [courseId, chapterId, progressKey, token]);
+  }, [progressKey]);
 
   useEffect(() => {
     loadSavedProgress();
   }, [loadSavedProgress]);
 
-  // Separate function for backend sync to keep handleVideoProgress clean
   const syncProgressToBackend = useCallback(
     async (currentTime: number) => {
-      if (!chapterId || !token) return;
-
+      if (!chapterId) return;
       lastSyncTimeRef.current = Date.now();
-
-      try {
-        const baseUrl = process.env.EXPO_PUBLIC_API_URL;
-        if (baseUrl) {
-          await axios.put(
-            `${baseUrl}/api/user/chapters/${chapterId}/progress`,
-            {
-              currentTime: currentTime,
-              completed: false,
-            },
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json",
-              },
-            }
-          );
-        }
-      } catch (error: any) {
-        console.error(
-          "❌ Failed to save progress:",
-          error.response?.data || error.message
-        );
-      }
+      await progressService.saveProgress(chapterId, currentTime);
     },
-    [chapterId, token]
+    [chapterId]
   );
 
   const handleVideoProgress = useCallback(
     async (currentTime: number) => {
       if (!courseId || !chapterId) return;
-
       const roundedMillis = Math.max(0, Math.floor(currentTime * 1000));
       lastProgressRef.current = currentTime;
 
-      // Save locally for instant resume (this is fast, do it every time)
       if (progressKey) {
-        try {
-          await AsyncStorage.setItem(progressKey, String(roundedMillis));
-        } catch {}
+        try { await AsyncStorage.setItem(progressKey, String(roundedMillis)); } catch {}
       }
 
-      // Debounce backend sync to avoid excessive API calls
       const now = Date.now();
       const timeSinceLastSync = now - lastSyncTimeRef.current;
+      if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
 
-      // Clear any pending sync timeout
-      if (syncTimeoutRef.current) {
-        clearTimeout(syncTimeoutRef.current);
-      }
-
-      // If enough time has passed, sync immediately
       if (timeSinceLastSync >= PROGRESS_SYNC_DEBOUNCE_MS) {
         syncProgressToBackend(currentTime);
       } else {
-        // Schedule a sync for later to ensure we don't miss the final position
         syncTimeoutRef.current = setTimeout(() => {
           syncProgressToBackend(lastProgressRef.current);
         }, PROGRESS_SYNC_DEBOUNCE_MS - timeSinceLastSync) as unknown as NodeJS.Timeout;
@@ -261,267 +139,77 @@ export default function VideoScreen() {
     [courseId, chapterId, progressKey, syncProgressToBackend]
   );
 
-  // Cleanup effect: sync final progress and clear timeout on unmount
   useEffect(() => {
     return () => {
-      // Clear any pending sync timeout
-      if (syncTimeoutRef.current) {
-        clearTimeout(syncTimeoutRef.current);
-      }
-      // Sync final progress on unmount
-      if (lastProgressRef.current > 0) {
-        syncProgressToBackend(lastProgressRef.current);
-      }
+      if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+      if (lastProgressRef.current > 0) syncProgressToBackend(lastProgressRef.current);
     };
   }, [syncProgressToBackend]);
 
   useEffect(() => {
-    const unsubscribe = navigation.addListener(
-      "beforeRemove",
-      async (e: any) => {
-        e.preventDefault();
-
-        // Sync final progress before leaving
-        if (lastProgressRef.current > 0) {
-          await syncProgressToBackend(lastProgressRef.current);
-        }
-
-        if (courseId) {
-          router.push({
-            pathname: "/Authenticated/(tabs)/Courses/CouseVideos",
-            params: { id: courseId },
-          });
-        } else {
-          navigation.dispatch(e.data.action);
-        }
+    const unsubscribe = navigation.addListener("beforeRemove", async (e: any) => {
+      e.preventDefault();
+      if (lastProgressRef.current > 0) await syncProgressToBackend(lastProgressRef.current);
+      if (courseId) {
+        router.push({
+          pathname: "/Authenticated/(tabs)/Courses/CourseDetail",
+          params: { id: courseId },
+        });
+      } else {
+        navigation.dispatch(e.data.action);
       }
-    );
+    });
     return unsubscribe;
   }, [navigation, courseId, syncProgressToBackend, router]);
 
-  // handleNextVideo is kept for potential future use but currently unused
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleNextVideo = useCallback(async () => {
-    if (!courseId || !chapterId || !currentCourse || !currentChapter) return;
-
-    if (!currentChapter.isCompleted) {
-      Alert.alert(
-        "Incomplete Chapter",
-        "Please complete the current chapter before proceeding."
-      );
-      return;
-    }
-
-    try {
-      const res = await axios.get(
-        `${process.env.EXPO_PUBLIC_API_URL}/api/courses/${courseId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      const courseData = res.data.data;
-      const currentIndex = courseData.chapters.findIndex(
-        (ch: Chapter) => ch.id === chapterId
-      );
-      const nextChapter: Chapter | undefined =
-        courseData.chapters[currentIndex + 1];
-
-      if (nextChapter) {
-        const nextChapterRes = await axios.get(
-          `${process.env.EXPO_PUBLIC_API_URL}/api/user/chapters/${nextChapter.id}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        const nextChapterData = nextChapterRes.data.data;
-
-        navigation.setParams({
-          chapterId: nextChapterData.id,
-          thumbnail: courseData.thumbnail ?? "",
-          courseId,
-          title: courseData.title,
-          description: courseData.description ?? courseData.overview ?? "",
-          duration: nextChapterData.duration.toString(),
-        });
-        setCurrentChapter(nextChapterData.id);
-        // Modal is commented out, so no need to call setShowModal
-      } else {
-        // Modal is commented out, so no need to call setShowModal
-        router.push({
-          pathname: "/Authenticated/(tabs)/Coins",
-          params: { id: courseId, screenType: "courseComplete" },
-        });
-      }
-    } catch (error: any) {
-      Alert.alert(
-        "Error",
-        error.response?.data?.message ||
-          "Failed to load the next chapter. Please try again."
-      );
-    }
-  }, [
-    currentCourse,
-    currentChapter,
-    chapterId,
-    courseId,
-    token,
-    setCurrentChapter,
-    navigation,
-    router,
-  ]);
-
-    const chapterIndex = React.useMemo(() => {
-  if (!currentCourse || !currentChapter) return null;
-
-  const index = currentCourse.chapters.findIndex(
-    (ch: Chapter) => ch.id === currentChapter.id
-  );
-
-  return index >= 0 ? index + 1 : null;
-}, [currentCourse, currentChapter]);
+  const chapterIndex = React.useMemo(() => {
+    if (!currentCourse || !currentChapter) return null;
+    const index = currentCourse.chapters.findIndex((ch) => ch.id === currentChapter.id);
+    return index >= 0 ? index + 1 : null;
+  }, [currentCourse, currentChapter]);
 
   const handleVideoComplete = useCallback(async () => {
-    console.log("🎯 handleVideoComplete called!");
-    console.log("Current chapter:", currentChapter);
-    console.log("Chapter ID:", chapterId);
-
-    if (!currentChapter || !chapterId) {
-      console.log("⚠️ Exiting early - missing chapter or chapterId:", {
-        hasCurrentChapter: !!currentChapter,
-        hasChapterId: !!chapterId,
+    if (!currentChapter || !chapterId || currentChapter.isCompleted) return;
+    updateChapterCompletion(chapterId, true);
+    await progressService.markChapterComplete(chapterId);
+    if ((currentChapter.coinValue ?? 0) > 0) {
+      await walletService.addTransaction({
+        type: "EARNED",
+        amount: currentChapter.coinValue ?? 0,
+        note: `${currentChapter.title} — Chapter Complete`,
+        course: currentCourse?.title ?? null,
       });
-      return;
     }
-
-    if (currentChapter.isCompleted) {
-      console.log("⚠️ Video already marked as completed");
-
-      const hasUnpassedQuizzes = currentChapter.quizzes.some(
-        (q) => !q.userResult?.passed
-      );
-
-      if (hasUnpassedQuizzes) {
-        console.log("📝 Has unpassed quizzes - user should complete them");
-        // TODO: Uncomment when modal is re-enabled
-        // setShowModal(true);
-        return;
-      }
-
-      // FIXED: No auto-advance; stay on completed video
-      console.log("✅ Chapter already complete - staying on video");
-      return;
-    }
-
-    try {
-      console.log("🔄 Calling chapter complete API...");
-      const response = await axios.post(
-        `${process.env.EXPO_PUBLIC_API_URL}/api/user/chapters/${chapterId}/watch`,
-        { completed: true },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      console.log("✅ Chapter completion API response:", response.data);
-
-      updateChapterCompletion(chapterId, true);
-
-      await fetchChapterData();
-
-      // Check if there are quizzes to take
-      const hasQuizzes =
-        currentChapter.quizzes && currentChapter.quizzes.length > 0;
-      const allQuizzesPassed = currentChapter.quizzes?.every(
-        (q) => q.userResult?.passed
-      );
-
-      console.log("Quiz status:", {
-        hasQuizzes,
-        allQuizzesPassed,
-        quizzes: currentChapter.quizzes,
-      });
-
-      if (hasQuizzes && !allQuizzesPassed) {
-        console.log("📝 Has quizzes to complete");
-        // TODO: Uncomment when modal is re-enabled
-        // setShowModal(true);
-      } else {
-        // FIXED: No auto-advance; log completion and stay
-        console.log("✅ Video completed - staying on chapter for review");
-        // handleNextVideo(); // Commented out to prevent auto-advance
-      }
-    } catch (error: any) {
-      console.error("❌ Error marking chapter as completed:", error);
-      console.error("Error response:", error.response?.data);
-      Alert.alert(
-        "Error",
-        error.response?.data?.message ||
-          "Failed to mark chapter as completed. Please try again."
-      );
-    }
-  }, [
-    currentChapter,
-    chapterId,
-    token,
-    updateChapterCompletion,
-    // handleNextVideo, // Removed dependency
-    fetchChapterData,
-  ]);
+  }, [currentChapter, currentCourse, chapterId, updateChapterCompletion]);
 
   if (!chapterId || !thumbnail || !courseId) {
     return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: "#f6f0ff",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <Text
-          style={{ fontFamily: "Poppins-Medium", fontSize: 16, color: "#666" }}
-        >
+      <View style={{ flex: 1, backgroundColor: "#f6f0ff", justifyContent: "center", alignItems: "center" }}>
+        <Text style={{ fontFamily: "Poppins-Medium", fontSize: 16, color: "#666" }}>
           Missing required parameters
         </Text>
       </View>
     );
   }
 
-  if (!currentChapter || !currentCourse) {
-    return <LoadingSpinner size={80} color="#CAA2FC" />;
-  }
+  if (!currentChapter || !currentCourse) return <LoadingSpinner size={80} color="#CAA2FC" />;
 
-  // Show loader while fetching chapter data, not the error message
   if (!currentChapter.videoUrl) {
-    if (isLoadingChapter) {
-      return <LoadingSpinner size={80} color="#CAA2FC" />;
-    }
+    if (isLoadingChapter) return <LoadingSpinner size={80} color="#CAA2FC" />;
     return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: "#f6f0ff",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <Text
-          style={{ fontFamily: "Poppins-Medium", fontSize: 16, color: "#666" }}
-        >
+      <View style={{ flex: 1, backgroundColor: "#f6f0ff", justifyContent: "center", alignItems: "center" }}>
+        <Text style={{ fontFamily: "Poppins-Medium", fontSize: 16, color: "#666" }}>
           No video available for this chapter
         </Text>
       </View>
     );
   }
 
+  const hasQuiz = currentChapter.quizzes.length > 0;
+  const allQuizzesPassed = hasQuiz && currentChapter.quizzes.every((q) => q.userResult?.passed || q.isPassed);
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#E5E8F1", position: "relative" }}>
-      {/* Use react-native-video on iOS for reliable completion detection */}
-      {/* Use expo-video on Android where it works correctly */}
+    <View style={vs.container}>
       {Platform.OS === "ios" ? (
         <VideoPlayerRNV
           key={`video-rnv-${chapterId}-${currentChapter.videoUrl}`}
@@ -542,360 +230,108 @@ export default function VideoScreen() {
         />
       )}
 
-      {/* <VideoPlayer
-        ref={videoRef}
-        videoUrl={currentChapter.videoUrl}
-        chapter={currentChapter}
-        onVideoComplete={handleVideoComplete}
-        onVideoProgress={handleVideoProgress}
-        startPositionMillis={initialPositionMillis}
-      /> */}
-      <ScrollView style={{ paddingHorizontal: 12, paddingVertical: 8 }}>
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <View style={{ width: "70%" }}>
-            <Text
-              numberOfLines={3}
-              style={{
-                fontFamily: "Poppins-Medium",
-                fontSize: 18,
-                marginVertical: 8,
-                marginRight: 2,
-              }}
-            >
-             {`Chapter ${chapterIndex}: ${currentChapter.title}`}
+      <ScrollView style={vs.scroll} contentContainerStyle={{ paddingBottom: 16 }} showsVerticalScrollIndicator={false}>
+        <View style={vs.chapterHeader}>
+          <View style={vs.chapterMeta}>
+            <Text style={vs.chapterLabel}>
+              Ch.{chapterIndex} · {formatDuration(currentChapter.duration)}
+              {currentCourse?.title ? `  ·  ${currentCourse.title}` : ""}
             </Text>
           </View>
-        </View>
-
-        <View
-          style={{
-            backgroundColor: "#FFFFFF73",
-            borderRadius: 16,
-            paddingVertical: 12,
-            minHeight: "30%",
-          }}
-        >
-          <View
-            style={{
-              flexDirection: "row",
-              borderBottomWidth: 1,
-              borderBottomColor: "#E5E5E5",
-            }}
-          >
-            <TouchableOpacity
-              onPress={() => setActiveTab("Summary")}
-              style={{
-                paddingVertical: 12,
-                paddingHorizontal: 16,
-                borderBottomWidth: activeTab === "Summary" ? 2 : 0,
-                borderBottomColor: "#730A96",
-              }}
-            >
-              <Text
-                style={{
-                  fontFamily: "HelveticaNeue",
-                  fontSize: 14,
-                  color: activeTab === "Summary" ? "#000000" : "#00000059",
-                  fontWeight: activeTab === "Summary" ? "600" : "400",
-                }}
-              >
-                Overview
-              </Text>
-            </TouchableOpacity>
-
-            {/* No resources for now  */}
-
-            {/* <TouchableOpacity
-              onPress={() => setActiveTab("resources")}
-              style={{
-                paddingVertical: 12,
-                paddingHorizontal: 16,
-                borderBottomWidth: activeTab === "resources" ? 2 : 0,
-                borderBottomColor: "#730A96",
-              }}
-            >
-              <Text
-                style={{
-                  fontFamily: "HelveticaNeue",
-                  fontSize: 14,
-                  color: activeTab === "resources" ? "#000000" : "#00000059",
-                  fontWeight: activeTab === "resources" ? "600" : "400",
-                }}
-              >
-                Resources ({currentChapter.documents?.length || 0})
-              </Text>
-            </TouchableOpacity> */}
-          </View>
-
-          <View style={{ padding: 16 }}>
-            {activeTab === "Summary" ? (
-              <View style={{ borderRadius: 15, height: 0.31 * screenHeight }}>
-                <Text className="font-teachers-medium text-[#0000008C] text-[16px] leading-[27px]">
-                  {currentChapter.description}
-                </Text>
+          <View style={vs.titleRow}>
+            <Text style={vs.chapterTitle} numberOfLines={2}>{currentChapter.title}</Text>
+            {(currentChapter.coinValue ?? 0) > 0 && (
+              <View style={vs.coinPill}>
+                <Image source={require("@/assets/icons/CourseVdo/iconLogo.png")} style={vs.coinIcon} />
+                <Text style={vs.coinText}>{currentChapter.coinValue}</Text>
               </View>
-            ) : (
-              <View>
-                {currentChapter.documents &&
-                currentChapter.documents.length > 0 ? (
-                  currentChapter.documents.map((document) => (
-                    <TouchableOpacity
-                      key={document.id}
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        paddingVertical: 12,
-                        paddingHorizontal: 16,
-                        backgroundColor: "#F8F9FA",
-                        borderRadius: 8,
-                        marginBottom: 8,
-                      }}
-                      onPress={() => handleDocumentDownload(document)}
-                    >
-                      <View
-                        style={{
-                          width: 40,
-                          height: 40,
-                          backgroundColor: "#730A96",
-                          borderRadius: 8,
-                          alignItems: "center",
-                          justifyContent: "center",
-                          marginRight: 12,
-                        }}
-                      >
-                        <Text
-                          style={{
-                            color: "#fff",
-                            fontSize: 12,
-                            fontWeight: "600",
-                          }}
-                        >
-                          {document.fileType.toUpperCase()}
-                        </Text>
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text
-                          style={{
-                            fontSize: 14,
-                            fontWeight: "500",
-                            color: "#333",
-                            marginBottom: 4,
-                          }}
-                        >
-                          {document.title}
-                        </Text>
-                        <Text
-                          style={{
-                            fontSize: 12,
-                            color: "#666",
-                          }}
-                        >
-                          {formatFileSize(document.fileSize)} •{" "}
-                          {document.uploadedAt
-                            ? new Date(document.uploadedAt).toLocaleDateString()
-                            : "Unknown"}
-                        </Text>
-                      </View>
-                      <AntDesign name="download" size={20} color="#730A96" />
-                    </TouchableOpacity>
-                  ))
-                ) : (
-                  <View
-                    style={{
-                      alignItems: "center",
-                      paddingVertical: 40,
-                    }}
-                  >
-                    <AntDesign name="filetext1" size={48} color="#CCC" />
-                    <Text
-                      style={{
-                        marginTop: 12,
-                        fontSize: 16,
-                        color: "#666",
-                        textAlign: "center",
-                      }}
-                    >
-                      No resources available for this chapter
-                    </Text>
-                  </View>
-                )}
+            )}
+          </View>
+          <View style={vs.statusRow}>
+            {currentChapter.videoCompleted && (
+              <View style={vs.statusBadge}>
+                <HugeiconsIcon icon={CheckmarkCircle01Icon} size={13} color="#16A34A" strokeWidth={1.5} />
+                <Text style={[vs.statusText, { color: "#16A34A" }]}>Watched</Text>
+              </View>
+            )}
+            {hasQuiz && allQuizzesPassed && (
+              <View style={vs.statusBadge}>
+                <HugeiconsIcon icon={CheckmarkCircle01Icon} size={13} color="#16A34A" strokeWidth={1.5} />
+                <Text style={[vs.statusText, { color: "#16A34A" }]}>Quiz passed</Text>
+              </View>
+            )}
+            {hasQuiz && !allQuizzesPassed && currentChapter.videoCompleted && (
+              <View style={[vs.statusBadge, { backgroundColor: "rgba(86,63,165,0.07)" }]}>
+                <HugeiconsIcon icon={HelpCircleIcon} size={13} color="#563FA5" strokeWidth={1.5} />
+                <Text style={[vs.statusText, { color: "#563FA5" }]}>Quiz pending</Text>
               </View>
             )}
           </View>
         </View>
+
+        {currentChapter.description ? (
+          <View style={vs.descCard}>
+            <Text style={vs.descLabel}>About this lesson</Text>
+            <Text style={vs.descText}>{currentChapter.description}</Text>
+          </View>
+        ) : (
+          <View style={vs.descCard}>
+            <Text style={vs.descText}>Watch the video to complete this chapter and unlock coins.</Text>
+          </View>
+        )}
       </ScrollView>
-      {/* Bottom Buttons */}
-      {/* <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "center",
-          paddingHorizontal: 16,
-          paddingTop: 12,
-          paddingBottom: 25,
-          backgroundColor: "#E5E8F1",
-          gap: 12,
-        }}
-      >
-        <Pressable
-          onPress={() => router.back()}
-          style={{
-            flex: 1,
-            paddingVertical: 12,
-            paddingHorizontal: 20,
 
-            borderRadius: 13,
-            borderWidth: 1,
-            borderColor: "#00000026",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Text
-            style={{
-              fontFamily: "Poppins-Medium",
-              fontSize: 16,
-              color: "#000000",
-            }}
-          >
-            Back
-          </Text>
-        </Pressable>
-
-        <Pressable
-          onPress={() => {
-            // if (!currentChapter.isCompleted) return;
-            router.push("/Authenticated/SummaryScreen");
-          }}
-          disabled={!currentChapter.isCompleted}
-          style={{
-            flex: 1,
-            paddingVertical: 12,
-            paddingHorizontal: 20,
-            backgroundColor: !currentChapter.isCompleted
-              ? "#CCCCCC"
-              : "#563FA5",
-            borderRadius: 13,
-            alignItems: "center",
-            justifyContent: "center",
-            opacity: !currentChapter.isCompleted ? 0.6 : 1,
-          }}
-        >
-          <Text
-            style={{
-              fontFamily: "Poppins-Medium",
-              fontSize: 16,
-              color: !currentChapter.isCompleted ? "#666666" : "#FFFFFF",
-            }}
-          >
-            View Summary
-          </Text>
-        </Pressable>
-      </View> */}
-
-      {/* Bottom Buttons */}
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "center",
-          paddingHorizontal: 16,
-          paddingTop: 12,
-          paddingBottom: 25,
-          backgroundColor: "#E5E8F1",
-          gap: 12,
-        }}
-      >
-        {/* Back Button */}
+      <View style={vs.actions}>
         <Pressable
           onPress={async () => {
-            // Sync final progress before leaving
-            if (lastProgressRef.current > 0) {
-              await syncProgressToBackend(lastProgressRef.current);
-            }
+            if (lastProgressRef.current > 0) await syncProgressToBackend(lastProgressRef.current);
             if (courseId) {
-              router.push({
-                pathname: "/Authenticated/(tabs)/Courses/CouseVideos",
-                params: { id: courseId },
-              });
+              router.push({ pathname: "/Authenticated/(tabs)/Courses/CourseDetail", params: { id: courseId } });
             } else {
               router.back();
             }
           }}
-          style={{
-            flex: 1,
-            paddingVertical: 12,
-            paddingHorizontal: 20,
-            borderRadius: 13,
-            borderWidth: 1,
-            borderColor: "#00000026",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
+          style={vs.backBtn}
         >
-          <Text
-            style={{
-              fontFamily: "Poppins-Medium",
-              fontSize: 16,
-              color: "#000000",
-            }}
-          >
-            Back
-          </Text>
+          <Text style={vs.backBtnText}>Back</Text>
         </Pressable>
 
-        {/* View Summary Button - FIXED: Only enable after video completion */}
         <Pressable
-          onPress={() => {
-            if (currentChapter.videoCompleted) {
-              router.push("/Authenticated/SummaryScreen");
-            }
-          }}
+          onPress={() => { if (currentChapter.videoCompleted) router.push("/Authenticated/SummaryScreen"); }}
           disabled={!currentChapter.videoCompleted}
-          style={{
-            flex: 1,
-            paddingVertical: 12,
-            paddingHorizontal: 20,
-            backgroundColor: currentChapter.videoCompleted
-              ? "#563FA5"
-              : "#CCCCCC",
-            borderRadius: 13,
-            alignItems: "center",
-            justifyContent: "center",
-            opacity: currentChapter.videoCompleted ? 1 : 0.6,
-          }}
+          style={[vs.summaryBtn, !currentChapter.videoCompleted && vs.disabledBtn]}
         >
-          <Text
-            style={{
-              fontFamily: "Poppins-Medium",
-              fontSize: 16,
-              color: currentChapter.videoCompleted ? "#FFFFFF" : "#666666",
-            }}
-          >
-            View Summary
+          <Text style={[vs.summaryBtnText, !currentChapter.videoCompleted && vs.disabledBtnText]}>
+            Chapter Notes
           </Text>
         </Pressable>
       </View>
-      {/* {showModal && (
-        <ProcessToQuizPopUp
-          coins={
-            currentChapter.quizzes[0]?.coinValue ??
-            currentChapter.coinValue ??
-            0
-          }
-          onStartQuiz={() => {
-            router.push({
-              pathname: "/Authenticated/QuizesPoint/HowQuizWorks",
-              params: {
-                coins:
-                  currentChapter.quizzes[0]?.coinValue ??
-                  currentChapter.coinValue ??
-                  0,
-                quizData: JSON.stringify({ quizzes: currentChapter.quizzes }),
-                quizId: currentChapter.quizzes[0]?.id,
-              },
-            });
-          }}
-        />
-      )} */}
     </View>
   );
 }
+
+const vs = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#F5F3FF" },
+  scroll: { flex: 1 },
+  chapterHeader: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 10 },
+  chapterMeta: { marginBottom: 4 },
+  chapterLabel: { fontFamily: "Poppins-Regular", fontSize: 11, color: "rgba(0,0,0,0.38)", letterSpacing: 0.2 },
+  titleRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 10 },
+  chapterTitle: { fontFamily: "Poppins-SemiBold", fontSize: 17, color: "#0D0D0D", lineHeight: 25, flex: 1 },
+  coinPill: { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(115,10,150,0.08)", borderRadius: 12, paddingHorizontal: 10, paddingVertical: 5, gap: 4, flexShrink: 0, marginTop: 3 },
+  coinIcon: { width: 14, height: 14 },
+  coinText: { fontFamily: "Poppins-SemiBold", fontSize: 12, color: "#730A96" },
+  statusRow: { flexDirection: "row", gap: 8, marginTop: 8, flexWrap: "wrap" },
+  statusBadge: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(22,163,74,0.07)", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
+  statusText: { fontFamily: "Poppins-Medium", fontSize: 11 },
+  descCard: { marginHorizontal: 16, marginBottom: 12, backgroundColor: "#FFFFFF", borderRadius: 14, padding: 16 },
+  descLabel: { fontFamily: "Poppins-SemiBold", fontSize: 12, color: "rgba(0,0,0,0.45)", marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 },
+  descText: { fontFamily: "Teachers-Medium", fontSize: 15, color: "#333", lineHeight: 24 },
+  actions: { flexDirection: "row", paddingHorizontal: 16, paddingTop: 12, paddingBottom: 30, backgroundColor: "#F5F3FF", gap: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "rgba(0,0,0,0.06)" },
+  backBtn: { flex: 1, paddingVertical: 14, borderRadius: 13, borderWidth: 1, borderColor: "rgba(0,0,0,0.12)", alignItems: "center", backgroundColor: "#fff" },
+  backBtnText: { fontFamily: "Poppins-Medium", fontSize: 15, color: "#333" },
+  summaryBtn: { flex: 1, paddingVertical: 14, borderRadius: 13, backgroundColor: "#563FA5", alignItems: "center" },
+  summaryBtnText: { fontFamily: "Poppins-Medium", fontSize: 15, color: "#FFFFFF" },
+  disabledBtn: { backgroundColor: "rgba(0,0,0,0.08)" },
+  disabledBtnText: { color: "rgba(0,0,0,0.30)" },
+});

@@ -4,10 +4,11 @@ import RedeemModal from "@/components/ui/Coins/RedeemModel";
 import CoinsWalletCard from "@/components/ui/Coins/WalletCard";
 import HowItWorks from "@/components/ui/Home/HowItWorks";
 import UserProfileHeader from "@/components/ui/Profile/UserProfileHeader";
-import { useWalletStore } from "@/stores/Wallet/walletStore";
-import AntDesign from "@expo/vector-icons/AntDesign";
+import { useWallet } from "@/hooks/useWallet";
+import { HugeiconsIcon } from "@hugeicons/react-native";
+import { ArrowLeft01Icon } from "@hugeicons/core-free-icons";
 import { useRouter } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -23,23 +24,12 @@ const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 const Profile = () => {
   const [redeemCoinsModalVisible, setRedeemCoinsModalVisible] = useState(false);
   const [successModalVisible, setSuccessModalVisible] = useState(false);
-  const { walletData, loading, fetchWalletData } = useWalletStore();
+  const { wallet, isLoading: loading, refetch } = useWallet();
   const router = useRouter();
 
-  // Memoize fetchWalletData to avoid unnecessary re-renders
-  const loadWalletData = useCallback(() => {
-    fetchWalletData();
-  }, [fetchWalletData]);
-
-  useEffect(() => {
-    loadWalletData();
-  }, [loadWalletData]);
-
   const handleRedeemSuccess = () => {
-    // Show success modal
     setSuccessModalVisible(true);
-    // Refresh wallet data
-    fetchWalletData();
+    refetch();
   };
 
   const handleSuccessModalClose = () => {
@@ -61,11 +51,11 @@ const Profile = () => {
       >
         {/* Back Button */}
         <TouchableOpacity
-          onPress={() => router.replace("/Authenticated/Home")}
+          onPress={() => router.replace("/Authenticated/(tabs)/Home")}
           className="p-2 bg-[#FFFFFF59] rounded-full h-12 w-12 items-center justify-center"
           style={{ zIndex: 1 }}
         >
-          <AntDesign name="left" size={16} color="#000000BF" />
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={16} color="#000000BF" strokeWidth={2} />
         </TouchableOpacity>
 
         {/* Centered Title */}
@@ -101,11 +91,11 @@ const Profile = () => {
 
           {/* Wallet Card */}
           <CoinsWalletCard
-            coins={walletData?.balance || 0}
+            coins={wallet?.balance || 0}
             maxCoins={10000}
             screen="coins"
-            totalEarned={walletData?.totalEarned || 0}
-            totalRedeemed={walletData?.totalRedeemed || 0}
+            totalEarned={wallet?.totalEarned || 0}
+            totalRedeemed={wallet?.totalRedeemed || 0}
           />
 
           {/* Create Redeem Request Button */}
@@ -130,9 +120,9 @@ const Profile = () => {
           {/* Coins Tabs with increased height */}
           <View style={{ minHeight: screenHeight * 0.6 }}>
             <CoinsTabs
-              transactions={walletData?.transactions || []}
-              currentBalance={walletData?.balance || 0}
-              onRedeemSuccess={fetchWalletData}
+              transactions={wallet?.transactions || []}
+              currentBalance={wallet?.balance || 0}
+              onRedeemSuccess={refetch}
             />
           </View>
         </ScrollView>
@@ -142,7 +132,7 @@ const Profile = () => {
       <RedeemCoinsModal
         visible={redeemCoinsModalVisible}
         onClose={() => setRedeemCoinsModalVisible(false)}
-        currentBalance={walletData?.balance || 0}
+        currentBalance={wallet?.balance || 0}
         subscriptionTier="ZUPER_CENT"
         onSuccess={handleRedeemSuccess}
       />

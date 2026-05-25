@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   AppState,
   AppStateStatus,
   StyleSheet,
+  Text,
   useWindowDimensions,
   View,
 } from "react-native";
@@ -56,6 +58,7 @@ export default function VideoPlayerRNV({
   // State
   const [paused, setPaused] = useState(false);
   const [duration, setDuration] = useState(0);
+  const [isBuffering, setIsBuffering] = useState(true);
 
   // Refs for tracking
   const maxWatchedRef = useRef(startPositionMillis / 1000);
@@ -136,12 +139,8 @@ export default function VideoPlayerRNV({
 
   const handleLoad = useCallback(
     (data: OnLoadData) => {
-      console.log("📺 RNV: Video loaded", {
-        duration: data.duration,
-        startPositionMillis,
-      });
-
       setDuration(data.duration);
+      setIsBuffering(false);
 
       // Seek to start position if provided
       if (startPositionMillis > 0 && videoRef.current) {
@@ -169,7 +168,6 @@ export default function VideoPlayerRNV({
       if (!isCompleted) {
         // Detect if user tried to skip ahead
         if (currentTime > maxWatched + SKIP_TOLERANCE_SECONDS) {
-          console.log("⚠️ RNV: Skip detected, resetting to:", maxWatched);
           isCorrectingSeekRef.current = true;
 
           // Reset to max watched position
@@ -204,17 +202,8 @@ export default function VideoPlayerRNV({
   );
 
   const handleEnd = useCallback(() => {
-    console.log("🎬 RNV: handleEnd fired!", {
-      hasCompleted: hasCompletedRef.current,
-      duration,
-      maxWatched: maxWatchedRef.current,
-      isCompleted,
-      videoFinished: videoFinishedRef.current,
-    });
-
     // Guard against multiple completion calls
     if (hasCompletedRef.current || videoFinishedRef.current) {
-      console.log("⚠️ RNV: Already completed, preventing replay");
       setPaused(true);
       return;
     }
@@ -224,17 +213,12 @@ export default function VideoPlayerRNV({
     // For incomplete videos, check if user actually watched enough
     // Only reset if they skipped significantly (watched less than 90% of video)
     if (!isCompleted && duration > 0 && maxWatched < duration * 0.9) {
-      console.log(
-        "⚠️ RNV: User hasn't watched enough, resetting to maxWatched:",
-        maxWatched
-      );
       // Reset to max watched and continue playing
       videoRef.current?.seek(maxWatched);
       setPaused(false);
       return;
     }
 
-    console.log("✅ RNV: Video completion criteria met, calling onComplete");
 
     // Mark as completed to prevent duplicate calls
     hasCompletedRef.current = true;
@@ -252,17 +236,13 @@ export default function VideoPlayerRNV({
     onProgressRef.current?.(maxWatchedRef.current);
 
     // Trigger completion callback (this will call the API)
-    console.log("🚀 RNV: Calling onComplete");
     onCompleteRef.current?.();
   }, [duration, isCompleted]);
 
   const handlePlaybackStateChanged = useCallback(
     (data: OnPlaybackStateChangedData) => {
-      console.log("📊 RNV: Playback state changed:", data);
-
       // If video finished and somehow starts playing again, stop it
       if (videoFinishedRef.current && data.isPlaying) {
-        console.log("🛑 RNV: Preventing replay after completion");
         setPaused(true);
       }
     },
@@ -270,7 +250,6 @@ export default function VideoPlayerRNV({
   );
 
   const handleError = useCallback((error: any) => {
-    console.error("❌ RNV: Video error:", error);
   }, []);
 
   // -------------------------------------------------------------------------
@@ -298,9 +277,14 @@ export default function VideoPlayerRNV({
         onEnd={handleEnd}
         onPlaybackStateChanged={handlePlaybackStateChanged}
         onError={handleError}
-        // iOS specific
         allowsExternalPlayback={false}
       />
+      {isBuffering && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#A78BFA" />
+          <Text style={styles.loadingText}>Loading video…</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -316,5 +300,17 @@ const styles = StyleSheet.create({
   video: {
     width: "100%",
     height: "100%",
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "#0A0614",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+  },
+  loadingText: {
+    fontFamily: "Poppins-Regular",
+    fontSize: 13,
+    color: "rgba(255,255,255,0.50)",
   },
 });

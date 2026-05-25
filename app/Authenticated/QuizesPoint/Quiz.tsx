@@ -2,32 +2,29 @@ import ScreenHeader from "@/components/common/ScreenHeader";
 import QuizFooter from "@/components/Quiz/Footer";
 import OptionButton from "@/components/Quiz/Options";
 import QuizQuestion from "@/components/Quiz/Questions";
-import { authStore } from "@/stores/authStore";
+import { walletService } from "@/lib/services";
 import { useCourseStore } from "@/stores/Course/courseStore";
 import quizStore from "@/stores/quizStore";
 import { Quiz as QuizType } from "@/types/Course";
-import axios from "axios";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import PopUp from "./PopUp";
 
 interface QuizParams {
   coins?: string;
-  quizData?: string;
   quizId?: string;
 }
 
 export default function Quiz() {
-  const { quizData, quizId } = useLocalSearchParams() as QuizParams;
+  const { quizId } = useLocalSearchParams() as QuizParams;
   const [currentIndex, setCurrentIndex] = useState(0);
   // Store answers per question index: { questionIndex: { text: optionText, optionId: id, isCorrect: boolean } }
   const [answers, setAnswers] = useState<
     Record<number, { text: string; optionId: string; isCorrect: boolean }>
   >({});
   const [showModal, setShowModal] = useState(false);
-  const { setTotal, reset, total } = quizStore();
-  const { token } = authStore();
+  const { setTotal, reset, total, pendingQuiz } = quizStore();
 
   // Derived state for current question
   const currentAnswer = answers[currentIndex];
@@ -38,14 +35,7 @@ export default function Quiz() {
 
   const { currentCourse, currentChapter, updateQuizResult } = useCourseStore();
 
-  let parsedQuizData: { quizzes: QuizType[] } | null = null;
-  try {
-    parsedQuizData = quizData ? JSON.parse(quizData as string) : null;
-  } catch (error) {
-    console.error("Failed to parse quizData:", error);
-  }
-
-  const currentQuiz: QuizType | undefined = parsedQuizData?.quizzes?.[0];
+  const currentQuiz: QuizType | undefined = pendingQuiz?.quiz as QuizType | undefined;
   const questions = currentQuiz?.questions || [];
 
   useEffect(() => {
@@ -59,65 +49,43 @@ export default function Quiz() {
     async (correctCount: number, totalCount: number) => {
       if (!quizId || !currentQuiz || !currentCourse || !currentChapter) return;
 
-      try {
-        // Quiz is passed only if all answers are correct
-        const passed = correctCount === totalCount;
-        setIsPassed(passed);
+      const passed = correctCount === totalCount;
+      setIsPassed(passed);
 
-        const scorePercentage =
-          totalCount > 0 ? (correctCount / totalCount) * 100 : 0;
+      const scorePercentage = totalCount > 0 ? (correctCount / totalCount) * 100 : 0;
 
-        console.log("📊 Saving Quiz Result:");
-        console.log("Correct answers:", correctCount);
-        console.log("Total questions:", totalCount);
-        console.log("Passed:", passed);
+      const result = {
+        score: scorePercentage,
+        passed,
+        attemptedAt: new Date().toISOString(),
+      };
 
-        const result = {
-          score: scorePercentage,
-          passed,
-          attemptedAt: new Date().toISOString(),
-        };
+      updateQuizResult(quizId, result);
 
-        await axios.post(
-          `${process.env.EXPO_PUBLIC_API_URL}/api/user/quiz/${quizId}/result`,
-          { score: scorePercentage },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        updateQuizResult(quizId, result);
-        setShowModal(true);
-      } catch (error: any) {
-        console.error("❌ Failed to save quiz result:", error);
-        Alert.alert("Error", "Failed to save quiz result. Please try again.");
+      if (passed) {
+        await walletService.addTransaction({
+          type: "EARNED",
+          amount: currentQuiz.coinValue,
+          note: `Quiz Passed — ${currentQuiz.title}`,
+          course: currentCourse.title,
+        });
       }
+
+      setShowModal(true);
     },
-    [
-      quizId,
-      currentQuiz,
-      currentCourse,
-      currentChapter,
-      token,
-      updateQuizResult,
-    ]
+    [quizId, currentQuiz, currentCourse, currentChapter, updateQuizResult]
   );
 
   const finishQuiz = async () => {
-    console.log("🎯 Quiz Finished:");
-    console.log("Final correct answers:", correctCount);
-    console.log("Total questions:", total);
-
     await saveQuizResult(correctCount, total);
   };
 
   const handleModalClose = () => {
     setShowModal(false);
 
-    if (!isPassed && currentChapter && currentCourse) {
+    if (!currentCourse || !currentChapter) return;
+
+    if (!isPassed) {
       router.push({
         pathname: "/Authenticated/(tabs)/Courses/VideoScreen",
         params: {
@@ -125,45 +93,35 @@ export default function Quiz() {
           thumbnail: currentCourse.thumbnail ?? "",
           courseId: currentCourse.id,
           title: currentCourse.title,
-          description:
-            currentCourse.description ?? currentCourse.overview ?? "",
+          description: currentCourse.description ?? currentCourse.overview ?? "",
           duration: currentChapter.duration.toString(),
         },
       });
-    } else {
-      if (!currentCourse || !currentChapter) return;
-      const currentIndex = currentCourse.chapters.findIndex(
-        (ch) => ch.id === currentChapter.id
-      );
-      const nextChapter = currentCourse.chapters[currentIndex + 1];
+      return;
+    }
 
-      if (nextChapter) {
-        axios
-          .get(
-            `${process.env.EXPO_PUBLIC_API_URL}/api/user/chapters/${nextChapter.id}`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          )
-          .then((res) => {
-            const nextChapterData = res.data.data;
-            router.push({
-              pathname: "/Authenticated/(tabs)/Courses/VideoScreen",
-              params: {
-                chapterId: nextChapterData.id,
-                thumbnail: currentCourse.thumbnail ?? "",
-                courseId: currentCourse.id,
-                title: currentCourse.title,
-                description:
-                  currentCourse.description ?? currentCourse.overview ?? "",
-                duration: nextChapterData.duration.toString(),
-              },
-            });
-          });
-      } else {
-        router.push({
-          pathname: "/Authenticated/(tabs)/Coins",
-          params: { id: currentCourse.id, screenType: "courseComplete" },
-        });
-      }
+    const chapterIndex = currentCourse.chapters.findIndex(
+      (ch) => ch.id === currentChapter.id
+    );
+    const nextChapter = currentCourse.chapters[chapterIndex + 1];
+
+    if (nextChapter) {
+      router.push({
+        pathname: "/Authenticated/(tabs)/Courses/VideoScreen",
+        params: {
+          chapterId: nextChapter.id,
+          thumbnail: currentCourse.thumbnail ?? "",
+          courseId: currentCourse.id,
+          title: currentCourse.title,
+          description: currentCourse.description ?? currentCourse.overview ?? "",
+          duration: nextChapter.duration.toString(),
+        },
+      });
+    } else {
+      router.push({
+        pathname: "/Authenticated/(tabs)/Coins",
+        params: { id: currentCourse.id, screenType: "courseComplete" },
+      });
     }
   };
 

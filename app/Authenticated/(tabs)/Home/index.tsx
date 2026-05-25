@@ -1,10 +1,12 @@
 import ContinueWatching from "@/components/ui/Home/continueWatchingCard";
 import CoursesCarousel from "@/components/ui/Home/CoursesCarousal";
 import WeeklyQuiz from "@/components/ui/Home/WeeklyQuiz";
+import TodayLessonCard from "@/components/ui/Learn/TodayLessonCard";
 import { useProfile } from "@/hooks/useProfile";
+import { useTodayLesson } from "@/hooks/useLearn";
 import { useRouter } from "expo-router";
 import React, { useMemo } from "react";
-import { FlatList, Image, Text, TouchableOpacity, View } from "react-native";
+import { FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 function getFirstName(name?: string): string {
   if (!name) return "";
@@ -13,6 +15,7 @@ function getFirstName(name?: string): string {
 }
 
 const sections = [
+  { id: "todayLesson", type: "todayLesson" as const },
   { id: "continue", type: "continue" as const },
   { id: "weeklyQuiz", type: "weeklyQuiz" as const },
   { id: "courses", type: "courses" as const },
@@ -21,6 +24,7 @@ const sections = [
 export default function HomeScreen() {
   const router = useRouter();
   const { profile, isLoading } = useProfile();
+  const { todayLesson } = useTodayLesson();
 
   const userInitial = useMemo(
     () => profile?.name?.trim().charAt(0).toUpperCase() ?? "",
@@ -122,6 +126,19 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 32 }}
         renderItem={({ item }) => {
+          if (item.type === "todayLesson" && todayLesson) {
+            return (
+              <View style={hs.todayWrap}>
+                <View style={hs.todayHeader}>
+                  <Text style={hs.todayLabel}>⚡ DAILY LESSON</Text>
+                  <TouchableOpacity onPress={() => router.push("/Authenticated/(tabs)/Learn")} activeOpacity={0.7}>
+                    <Text style={hs.viewAllText}>See all paths</Text>
+                  </TouchableOpacity>
+                </View>
+                <TodayLessonCard lesson={todayLesson.lesson} path={todayLesson.path} />
+              </View>
+            );
+          }
           if (item.type === "continue") return <ContinueWatching />;
           if (item.type === "weeklyQuiz") return <WeeklyQuiz />;
           if (item.type === "courses")
@@ -140,3 +157,28 @@ export default function HomeScreen() {
     </View>
   );
 }
+
+const hs = StyleSheet.create({
+  todayWrap: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 4,
+  },
+  todayHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  todayLabel: {
+    fontFamily: "Poppins-SemiBold",
+    fontSize: 10,
+    color: "#7C3AED",
+    letterSpacing: 1.2,
+  },
+  viewAllText: {
+    fontFamily: "Poppins-Regular",
+    fontSize: 12,
+    color: "rgba(0,0,0,0.38)",
+  },
+});

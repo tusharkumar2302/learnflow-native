@@ -1,3 +1,4 @@
+import { authService } from "@/lib/services";
 import { authStore } from "@/stores/authStore";
 import { useRedeemStore } from "@/stores/Coin/coinStore";
 import { useCourseStore } from "@/stores/Course/courseStore";
@@ -5,8 +6,6 @@ import currentVid from "@/stores/currentVid";
 import quizStore from "@/stores/quizStore";
 import { useWalletStore } from "@/stores/Wallet/walletStore";
 import { useWeeklyQuizStore } from "@/stores/WeeklyQuiz/weeklyQuiz";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
@@ -24,7 +23,7 @@ import Svg, { Path } from "react-native-svg";
 
 const UserProfileHeader = () => {
   const { width: screenWidth } = Dimensions.get("window");
-  const { logout, token } = authStore();
+  const { logout } = authStore();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
@@ -35,9 +34,10 @@ const UserProfileHeader = () => {
     email: string;
     phone?: string | null;
     imgUrl?: string | null;
+    streak?: number;
+    subscriptionTier?: string;
   } | null>(null);
 
-  // Get reset functions from stores
   const resetCourseStore = useCourseStore((state) => state.reset);
   const resetWalletStore = useWalletStore((state) => state.reset);
   const resetRedeemStore = useRedeemStore((state) => state.reset);
@@ -62,31 +62,20 @@ const UserProfileHeader = () => {
             style: "destructive",
             onPress: async () => {
               try {
-                // Reset all stores first to prevent accessing stale data
                 resetCourseStore();
                 resetWalletStore();
                 resetRedeemStore();
                 resetWeeklyQuizStore();
                 resetQuizStore();
                 resetCurrentVid();
-
-                // Clear local state
                 setProfile(null);
-
-                // Perform logout (clears auth token)
                 await logout();
-                await AsyncStorage.setItem('hasOnboarded','false');
-
-                // Small delay to ensure state is cleared
                 await new Promise((resolve) => setTimeout(resolve, 150));
-
-                // Navigate to login screen
                 router.replace({
                   pathname: "/Authentication/[id]",
                   params: { id: "login" },
                 });
-              } catch (error) {
-                console.error("❌ Logout error:", error);
+              } catch {
                 setLoggingOut(false);
                 Alert.alert("Error", "Failed to logout. Please try again.");
               }
@@ -95,33 +84,29 @@ const UserProfileHeader = () => {
         ],
         { cancelable: true, onDismiss: () => setLoggingOut(false) }
       );
-    } catch (error) {
-      console.error("❌ Logout button error:", error);
+    } catch {
       setLoggingOut(false);
     }
   };
 
-  const baseUrl = process.env.EXPO_PUBLIC_API_URL;
-
   const fetchProfile = useCallback(async () => {
-    if (!baseUrl || !token) return;
+    setProfileLoading(true);
     try {
-      setProfileLoading(true);
-      const res = await axios.get(`${baseUrl}/api/user/profile/new`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const p = await authService.getProfile();
+      setProfile({
+        id: p.id,
+        name: p.name,
+        email: p.email,
+        imgUrl: p.imgUrl,
+        streak: p.streak,
+        subscriptionTier: p.subscriptionTier,
       });
-      if (res.data?.success && res.data?.data) {
-        setProfile(res.data.data);
-      }
-    } catch (error: any) {
-      console.log(
-        "Failed to fetch profile",
-        error?.response?.data || error?.message
-      );
+    } catch {
+      // silent — profile load failure shows empty state
     } finally {
       setProfileLoading(false);
     }
-  }, [baseUrl, token]);
+  }, []);
 
   useEffect(() => {
     fetchProfile();
@@ -133,118 +118,31 @@ const UserProfileHeader = () => {
   }, [profile?.name]);
 
   const pickImageAndUpload = useCallback(async () => {
-    try {
-      if (!baseUrl) {
-        Alert.alert("Error", "API base URL is not configured.");
-        return;
-      }
-      if (!token) {
-        Alert.alert("Error", "You are not authenticated.");
-        return;
-      }
-
-      const { status } =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert(
-          "Permission required",
-          "We need access to your photos to update your profile image."
-        );
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
-
-      if (result.canceled || !result.assets?.length) return;
-      const asset = result.assets[0];
-      const uri = asset.uri;
-      const mimeType =
-        asset.mimeType || (uri.endsWith(".png") ? "image/png" : "image/jpeg");
-      const fileName =
-        asset.fileName ||
-        uri.split("/").pop() ||
-        `upload.${mimeType.split("/")[1] || "jpg"}`;
-
-      setLoading(true);
-
-      const form = new FormData();
-      const rnFile: any = { uri, name: fileName, type: mimeType };
-      form.append("image", rnFile as any);
-
-      const uploadRes = await axios.post(
-        `${baseUrl}/api/files/image/upload`,
-        form,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-
-      const imageUrl = uploadRes?.data?.data?.imageUrl;
-      if (!imageUrl) {
-        throw new Error("No imageUrl returned from upload API");
-      }
-
-      await axios.patch(
-        `${baseUrl}/api/user/profile/image`,
-        { imgUrl: imageUrl },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      await fetchProfile();
-      Alert.alert("Success", "Profile image updated.");
-    } catch (error: any) {
-      console.log(
-        "Image upload/update failed",
-        error?.response?.data || error?.message
-      );
-      Alert.alert(
-        "Error",
-        error?.response?.data?.message || "Failed to update profile image."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [baseUrl, token, fetchProfile]);
+    Alert.alert("Coming Soon", "Photo upload will be available in a future update.");
+    setLoading(false);
+  }, []);
 
   return (
     <View
       className="mb-8 rounded-xl self-center"
-      style={{
-        width: screenWidth * 0.875,
-      }}
+      style={{ width: screenWidth * 0.875 }}
     >
-      {/* allow wrapping so logout goes to next line on very small widths */}
       <View
         style={{
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "space-between",
-          flexWrap: "wrap", // key for tiny devices
+          flexWrap: "wrap",
         }}
       >
-        {/* Left: Avatar + Info */}
         <View
           style={{
             flexDirection: "row",
             alignItems: "center",
-            flexShrink: 1, // let this shrink before overflowing
-            minWidth: 0, // allow Text to wrap instead of pushing out
+            flexShrink: 1,
+            minWidth: 0,
           }}
         >
-          {/* Profile Image */}
           <View style={{ position: "relative", marginRight: 12 }}>
             {profile?.imgUrl ? (
               <Image
@@ -273,7 +171,6 @@ const UserProfileHeader = () => {
                 </Text>
               </View>
             )}
-            {/* Edit Badge */}
             <Pressable
               onPress={pickImageAndUpload}
               disabled={loading}
@@ -296,43 +193,41 @@ const UserProfileHeader = () => {
             </Pressable>
           </View>
 
-          {/* Name + ID */}
-          <View
-            style={{
-              flexShrink: 1,
-              minWidth: 0,
-            }}
-          >
+          <View style={{ flexShrink: 1, minWidth: 0, gap: 3 }}>
             <Text
-              style={{
-                color: "black",
-                fontSize: 20,
-                fontFamily: "Teachers-SemiBold",
-              }}
+              style={{ color: "black", fontSize: 20, fontFamily: "Teachers-SemiBold" }}
               numberOfLines={1}
             >
               {profile?.name || (profileLoading ? "Loading..." : "User")}
             </Text>
             <Text
-              style={{
-                fontSize: 13,
-                color: "#730A96A6",
-                fontFamily: "Teachers-Medium",
-              }}
+              style={{ fontSize: 13, color: "#730A96A6", fontFamily: "Teachers-Medium" }}
               numberOfLines={1}
             >
               {profile?.email || ""}
             </Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 }}>
+              {profile?.subscriptionTier && profile.subscriptionTier !== "FREE" && (
+                <View style={{ backgroundColor: "rgba(115,10,150,0.10)", borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 }}>
+                  <Text style={{ fontSize: 10, fontFamily: "Poppins-SemiBold", color: "#730A96" }}>
+                    {profile.subscriptionTier.replace("ZUPER_", "")}
+                  </Text>
+                </View>
+              )}
+              {(profile?.streak ?? 0) > 0 && (
+                <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "rgba(249,115,22,0.10)", borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2, gap: 2 }}>
+                  <Text style={{ fontSize: 11 }}>🔥</Text>
+                  <Text style={{ fontSize: 10, fontFamily: "Poppins-Medium", color: "#EA580C" }}>
+                    {profile?.streak}d streak
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
         </View>
 
-        {/* Right: Logout */}
         <TouchableOpacity
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            marginTop: 8, // when wrapped, add a bit of space
-          }}
+          style={{ flexDirection: "row", alignItems: "center", marginTop: 8 }}
           onPress={logOutBTn}
           disabled={loggingOut}
         >

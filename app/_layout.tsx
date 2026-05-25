@@ -1,5 +1,6 @@
-import { Slot } from "expo-router";
+import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import * as SplashScreen from "expo-splash-screen";
 import "../global.css";
 
 import { Platform } from "react-native";
@@ -8,15 +9,19 @@ import {
   initialWindowMetrics,
 } from "react-native-safe-area-context";
 
+SplashScreen.preventAutoHideAsync();
+
 export default function RootLayout() {
+  SplashScreen.hideAsync();
+
   return (
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
       <StatusBar
-        style="dark"
-        backgroundColor="transparent"
+        style="light"
+        backgroundColor="#0F0820"
         translucent={Platform.OS === "android"}
       />
-      <Slot />
+      <Stack screenOptions={{ headerShown: false, animation: "fade" }} />
     </SafeAreaProvider>
   );
 }

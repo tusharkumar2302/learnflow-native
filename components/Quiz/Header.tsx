@@ -1,4 +1,5 @@
-import { Ionicons } from "@expo/vector-icons";
+import { HugeiconsIcon } from "@hugeicons/react-native";
+import { ArrowLeft01Icon } from "@hugeicons/core-free-icons";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
@@ -16,7 +17,7 @@ const QuizHeader = ({
   <View style={styles.header}>
     <View style={styles.QuizTxt}>
       <TouchableOpacity style={styles.backBtn} onPress={onBack}>
-        <Ionicons name="chevron-back-outline" size={24} color="black" />
+        <HugeiconsIcon icon={ArrowLeft01Icon} size={24} color="black" strokeWidth={2} />
       </TouchableOpacity>
       <Text className="font-poppins-medium text-[26px]">{title} Quiz</Text>
     </View>

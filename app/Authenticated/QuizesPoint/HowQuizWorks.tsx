@@ -1,5 +1,6 @@
 import QuizHeader from "@/components/Quiz/Header";
 import { useCourseStore } from "@/stores/Course/courseStore";
+import quizStore from "@/stores/quizStore";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React from "react";
 import {
@@ -13,21 +14,24 @@ import {
 
 interface QuizParams {
   coins?: string;
-  quizData?: string;
   quizId?: string;
 }
 
 export default function HowQuizWorks() {
-  const { coins, quizData, quizId } = useLocalSearchParams<QuizParams>();
+  const { coins } = useLocalSearchParams();
   const { width: screenWidth } = Dimensions.get("window");
   const { height: screenHeight } = Dimensions.get("window");
   const router = useRouter();
   const { currentCourse } = useCourseStore();
+  const { pendingQuiz } = quizStore();
 
-  const parsedQuizData = quizData ? JSON.parse(quizData) : null;
-  const currentQuiz = parsedQuizData?.quizzes?.[0];
-  const coinValue = Number(coins) || currentQuiz?.coinValue || 0;
+  const currentQuiz = pendingQuiz?.quiz ?? null;
+  const quizId = pendingQuiz?.quizId ?? null;
+  const coinValue = pendingQuiz?.coinValue ?? Number(coins) ?? 0;
   const totalScore = coinValue;
+
+  const passScore = currentQuiz?.passScore ?? 0;
+  const questions = currentQuiz?.questions ?? [];
 
   if (!currentQuiz || !quizId) {
     return (
@@ -47,13 +51,14 @@ export default function HowQuizWorks() {
       >
         <QuizHeader
           score={0}
+          title={currentCourse?.title ?? ""}
           onBack={() => {
             router.back();
           }}
           totalScore={totalScore}
         />
       </View>
-      {parsedQuizData?.quizzes[0]?.userResult?.passed ? (
+      {currentQuiz?.userResult?.passed ? (
         <View className="mt-16">
           <View
             className="bg-white self-center px-8 rounded-2xl py-2 items-center"
@@ -139,19 +144,16 @@ export default function HowQuizWorks() {
               <Text className="text-[#5cb44a] font-semibold text-[13px]">
                 {Math.max(
                   1,
-                  Math.ceil(
-                    (currentQuiz.passScore / 100) * currentQuiz.questions.length
-                  )
+                  Math.ceil((passScore / 100) * questions.length)
                 )}{" "}
-                / {currentQuiz.questions.length} ({currentQuiz.passScore}
-                %)
+                / {questions.length} ({passScore}%)
               </Text>
             </View>
 
             <View className="w-[94%] bg-[#0000000b] h-[7px] mt-1 mb-3 rounded-md justify-center">
               <View
                 className="bg-[#5cb44a] h-[4px] rounded-md"
-                style={{ width: `${currentQuiz.passScore}%` }}
+                style={{ width: `${passScore}%` }}
               />
             </View>
 
@@ -187,7 +189,7 @@ export default function HowQuizWorks() {
                 onPress={() => {
                   router.push({
                     pathname: "/Authenticated/QuizesPoint/Quiz",
-                    params: { coins: coinValue.toString(), quizData, quizId },
+                    params: { coins: coinValue.toString(), quizId },
                   });
                 }}
                 className="bg-[#563FA5] rounded-[13px] px-5 py-2 mr-3 mt-4 w-[48%]"

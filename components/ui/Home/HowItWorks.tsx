@@ -1,4 +1,5 @@
-import { AntDesign } from "@expo/vector-icons";
+import { HugeiconsIcon } from "@hugeicons/react-native";
+import { Cancel01Icon } from "@hugeicons/core-free-icons";
 import React, { useState } from "react";
 import { Dimensions, Image, Pressable, Text, View } from "react-native";
 
@@ -54,11 +55,11 @@ export default function HowItWorks() {
                 setVisible(false);
               }}
             >
-              <AntDesign
-                name="close"
+              <HugeiconsIcon
+                icon={Cancel01Icon}
                 size={22}
                 color="#00000059"
-                style={{ height: 25, width: 25 }}
+                strokeWidth={2}
               />
             </Pressable>
           </View>

@@ -49,10 +49,6 @@ const PopUp = ({ coins, onClose, score, total }: PopUpProps) => {
 
   const handleNextChapter = () => {
     if (!currentCourse || !currentChapter?.id) {
-      console.error("Missing course or chapter data", {
-        currentCourse,
-        currentChapter,
-      });
       Alert.alert("Error", "Missing course or chapter data.");
       return;
     }
@@ -79,7 +75,6 @@ const PopUp = ({ coins, onClose, score, total }: PopUpProps) => {
         },
       });
     } else {
-      console.log("No next chapter available, navigating to Coins screen");
       onClose();
       router.push({
         pathname: "/Authenticated/(tabs)/Coins",
@@ -182,20 +177,9 @@ const PopUp = ({ coins, onClose, score, total }: PopUpProps) => {
             <TouchableOpacity
               onPress={() => {
                 if (!currentChapter?.id || !currentCourse?.id) {
-                  console.error("Missing data for Watch Again", {
-                    currentChapter,
-                    currentCourse,
-                  });
-                  Alert.alert(
-                    "Error",
-                    "Cannot navigate to video. Missing course or chapter data."
-                  );
+                  Alert.alert("Error", "Cannot navigate to video. Missing course or chapter data.");
                   return;
                 }
-                console.log("Navigating to Watch Again", {
-                  chapterId: currentChapter.id,
-                  courseId: currentCourse.id,
-                });
                 onClose();
                 router.push({
                   pathname: "/Authenticated/(tabs)/Courses/VideoScreen",
@@ -204,8 +188,7 @@ const PopUp = ({ coins, onClose, score, total }: PopUpProps) => {
                     thumbnail: currentCourse.thumbnail ?? "",
                     courseId: currentCourse.id,
                     title: currentCourse.title,
-                    description:
-                      currentCourse.description ?? currentCourse.overview ?? "",
+                    description: currentCourse.description ?? currentCourse.overview ?? "",
                     duration: currentChapter.duration.toString(),
                   },
                 });
