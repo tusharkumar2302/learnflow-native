@@ -1,37 +1,30 @@
-import { useRouter } from "expo-router";
-import { Image, StatusBar, StyleSheet, TouchableOpacity } from "react-native";
-import { scale, verticalScale } from "react-native-size-matters";
-import BackgroundWrapper from "../../components/common/BackgroundWrapper";
+import { Image, StyleSheet, View } from "react-native";
+import { StatusBar } from "expo-status-bar";
 
 const Splash = () => {
-  const router = useRouter();
   return (
-    <BackgroundWrapper colors={["#000000", "#000000"] as const}>
-      <StatusBar style="light" backgroundColor="#000000" />
-
-      <TouchableOpacity
-        style={styles.center}
-      >
-        <Image
-          source={require("@/assets/images/logo.png")}
-          style={styles.logo}
-        />
-      </TouchableOpacity>
-    </BackgroundWrapper>
+    <View style={styles.container}>
+      <StatusBar style="light" backgroundColor="#0F0820" />
+      <Image
+        source={require("@/assets/images/Splash-screen.png")}
+        style={styles.image}
+        resizeMode="contain"
+      />
+    </View>
   );
 };
 
 export default Splash;
 
 const styles = StyleSheet.create({
-  center: {
+  container: {
+    flex: 1,
+    backgroundColor: "#0F0820",
     justifyContent: "center",
     alignItems: "center",
-    flex: 1,
   },
-  logo: {
-    width: scale(282),
-    height: verticalScale(52),
-    resizeMode: "contain",
+  image: {
+    flex: 1,
+    width: "100%",
   },
 });

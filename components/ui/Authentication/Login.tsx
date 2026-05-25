@@ -1,251 +1,174 @@
+import { authService } from "@/lib/services";
 import { authStore } from "@/stores/authStore";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
-import { LinearGradient } from "expo-linear-gradient";
-import { router, useLocalSearchParams } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import { HugeiconsIcon } from "@hugeicons/react-native";
+import { EyeIcon, ViewOffSlashIcon } from "@hugeicons/core-free-icons";
+import { router } from "expo-router";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Keyboard,
+  Animated,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import { scale, verticalScale, moderateScale } from "react-native-size-matters";
+import { moderateScale, verticalScale } from "react-native-size-matters";
+import { colors } from "@/theme";
+import { InputField, PrimaryButton } from "@/components/ui/primitives";
 
-export default function Login() {
-  const { redirect, courseID } = useLocalSearchParams();
-  const { token, setToken, setemail, setPendingRedirect } = authStore();
-  const [email, setEmail] = useState<string>("");
-  const [inValidEmail, setinValidEmail] = useState(false);
+export default function Login({ lightMode = false }: { lightMode?: boolean }) {
+  const { setToken, setEmail: persistEmail } = authStore();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  //for keyboard visibility
-  const [keyBoardOn, setkeyBoardOn] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string>("");
-  const baseUrl = process.env.EXPO_PUBLIC_API_URL;
-  const [isLoadingOtp, setIsLoadingOtp] = useState(false);
+
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(10)).current;
+
   useEffect(() => {
-    //on component mounting
-    //1
-    const keyboardVisible = Keyboard.addListener("keyboardDidShow", () => {
-      setkeyBoardOn(true);
-    });
-
-    //2
-    const keyboardHide = Keyboard.addListener("keyboardDidHide", () => {
-      setkeyBoardOn(false);
-    });
-
-    //on component unmounting
-    return () => {
-      keyboardVisible.remove();
-      keyboardHide.remove();
-    };
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 360, delay: 40, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 320, delay: 40, useNativeDriver: true }),
+    ]).start();
+    // fadeAnim and slideAnim are stable Animated.Value refs — deps intentionally empty
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    const loadToken = async () => {
-      try {
-        const savedToken = await AsyncStorage.getItem("authToken");
-        if (savedToken) {
-          setToken(savedToken);
-          router.replace("/Authenticated/Home");
-        }
-      } catch (error) {
-        console.error("Error loading token:", error);
-      }
-    };
-    loadToken();
-  }, [setToken]);
+  const isValid = email.trim().length > 3 && password.length >= 6;
 
-const otpReq = useCallback(async () => {
-  if (!isValidEmail(email)) {
-    setinValidEmail(true);
-    setErrorMsg("Please enter a valid email address");
-    return;
-  }
+  const handleSignIn = useCallback(async () => {
+    if (!isValid) return;
+    setError("");
+    setIsLoading(true);
 
-  setinValidEmail(false);
-  setIsLoadingOtp(true);
-  setErrorMsg("");
-
-  try {
-    const otpRes = await axios.post(
-      `${baseUrl}/api/auth/signin/send-otp`,
-      { email },
-      { headers: { "Content-Type": "application/json" } }
-    );
-
-    if (!otpRes.data.success) {
-      setErrorMsg("Failed to send OTP. Please try again.");
-      return;
+    try {
+      const result = await authService.signIn(email.trim().toLowerCase(), password);
+      await setToken(result.token);
+      await persistEmail(email.trim().toLowerCase());
+      router.replace("/Authenticated/(tabs)/Home");
+    } catch {
+      setError("Incorrect email or password.");
+    } finally {
+      setIsLoading(false);
     }
-
-    setemail(email);
-    router.replace("/Authentication/otp");
-  } catch (err) {
-    console.error("Send OTP error:", err);
-    setErrorMsg("Failed to send OTP. Please try again.");
-  } finally {
-    setIsLoadingOtp(false);
-  }
-}, [email, baseUrl, setemail]);
-
-  // Email validation
-  const isValidEmail = (email: string) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  };
+  }, [email, password, isValid, setToken, persistEmail]);
 
   return (
-    <LinearGradient
-      colors={["#0B0B0D", "#191321"]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={[styles.formContainer]}
+    <Animated.View
+      style={[s.root, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}
     >
-      <View>
-        <View style={{ alignItems: "center", gap: 5 }}>
-          <Text style={styles.loginTitle}>Login with Zuperior Credentials</Text>
-          {/* <Text style={styles.credentialText}>
-            Enter your Zuperior Credentials
-          </Text> */}
-        </View>
+      {/* Fields — open layout, no container */}
+      <View style={s.fields}>
+        <InputField
+          label="Email"
+          value={email}
+          onChangeText={setEmail}
+          placeholder="your@email.com"
+          autoCapitalize="none"
+          keyboardType="email-address"
+          autoCorrect={false}
+          returnKeyType="next"
+          lightMode={lightMode}
+        />
+        <InputField
+          label="Password"
+          value={password}
+          onChangeText={setPassword}
+          placeholder="Min. 6 characters"
+          secureTextEntry={!showPassword}
+          returnKeyType="done"
+          onSubmitEditing={handleSignIn}
+          lightMode={lightMode}
+          rightElement={
+            <TouchableOpacity
+              onPress={() => setShowPassword(!showPassword)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <HugeiconsIcon
+                icon={showPassword ? ViewOffSlashIcon : EyeIcon}
+                size={moderateScale(16)}
+                color={lightMode ? "rgba(0,0,0,0.35)" : colors.text.muted}
+                strokeWidth={1.5}
+              />
+            </TouchableOpacity>
+          }
+        />
+      </View>
 
-        <View style={[styles.inputContainer, { paddingHorizontal: 0 }]}>
-          <View
-            style={{ backgroundColor: "#FFFFFF14", borderRadius: 8, flex: 1 }}
-          >
-            <TextInput
-              placeholder="Email Address"
-              placeholderTextColor="#FFFFFF80"
-              style={styles.input}
-              value={email}
-              onChangeText={(text) => {
-                setEmail(text);
-                if (inValidEmail) {
-                  setinValidEmail(false);
-                  setErrorMsg("");
-                }
-              }}
-              autoCapitalize="none"
-              keyboardType={"email-address"}
-            />
-          </View>
-        </View>
+      <TouchableOpacity activeOpacity={0.65} style={s.forgotRow}>
+        <Text style={[s.forgotText, lightMode && { color: "rgba(0,0,0,0.38)" }]}>
+          Forgot password?
+        </Text>
+      </TouchableOpacity>
+
+      {error ? <Text style={s.error}>{error}</Text> : null}
+
+      {/* Spacer pushes actions toward screen bottom */}
+      <View style={s.spacer} />
+
+      <View>
+        <PrimaryButton
+          label="Continue"
+          onPress={handleSignIn}
+          loading={isLoading}
+          disabled={!isValid}
+        />
 
         <TouchableOpacity
-          style={[
-            styles.signInButton,
-            { marginTop: 20, marginBottom: 20 },
-            isLoadingOtp && styles.disabledButton, // optional: gray out
-          ]}
-          onPress={otpReq}
-          disabled={isLoadingOtp || !email.trim() || inValidEmail} // disable if loading or empty
+          onPress={() => router.push("/Authentication/signup")}
+          activeOpacity={0.65}
+          style={s.createRow}
         >
-          {isLoadingOtp ? (
-            <View
-              style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
-            >
-              <ActivityIndicator color="#000" size="small" />
-              <Text style={styles.signInText}>Sending OTP...</Text>
-            </View>
-          ) : (
-            <Text style={styles.signInText}>Get OTP</Text>
-          )}
-        </TouchableOpacity>
-
-        {errorMsg ? (
-          <Text style={{ color: "#FF4D4F", fontSize: 12, marginTop: 5 }}>
-            {errorMsg}{" "}
+          <Text style={[s.createText, lightMode && { color: "rgba(0,0,0,0.42)" }]}>
+            {"Don't have an account?  "}
+            <Text style={s.createLink}>Sign up</Text>
           </Text>
-        ) : null}
+        </TouchableOpacity>
       </View>
-    </LinearGradient>
+    </Animated.View>
   );
 }
 
-const styles = StyleSheet.create({
-  formContainer: {
-    marginTop: verticalScale(20),
-    borderRadius: moderateScale(10),
-    padding: scale(15),
-  },
-
-  loginTitle: {
-    color: "#fff",
-    fontSize: moderateScale(18),
-    fontWeight: "500",
-    marginVertical: verticalScale(10),
-  },
-
-  disabledButton: {
-    opacity: 0.6,
-  },
-
-  credentialText: {
-    color: "#aaa",
-    fontSize: moderateScale(12),
-    marginBottom: verticalScale(10),
-    marginTop: verticalScale(5),
-    textAlign: "center",
-  },
-
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: moderateScale(10),
-    paddingHorizontal: scale(10),
-    marginTop: verticalScale(8),
-    height: verticalScale(40),
-    // gap: scale(7),
-  },
-
-  input: {
+const s = StyleSheet.create({
+  root: {
     flex: 1,
-    color: "#fff",
-    paddingVertical: verticalScale(8),
-    paddingHorizontal: scale(10),
-    fontSize: moderateScale(14),
-    borderColor: "#FFFFFF40",
-    borderWidth: 1,
-    borderRadius: moderateScale(8),
   },
-
+  fields: {
+    gap: verticalScale(14),
+  },
+  forgotRow: {
+    alignSelf: "flex-end",
+    marginTop: verticalScale(10),
+    paddingVertical: verticalScale(2),
+  },
   forgotText: {
-    color: "#CAA2FC",
+    fontFamily: "Poppins-Regular",
     fontSize: moderateScale(12),
-    textAlign: "left",
-    // marginBottom: verticalScale(6),
-    fontWeight: "600",
+    color: "rgba(255,255,255,0.38)",
   },
-
-  signInButton: {
-    backgroundColor: "#563FA5",
-    borderRadius: moderateScale(8),
-    paddingVertical: verticalScale(12),
-    alignItems: "center",
-    // marginTop: verticalScale(8),
-  },
-
-  signInText: {
-    color: "#ffffff",
-    fontWeight: "500",
-    fontSize: moderateScale(14),
-  },
-
-  guestButton: {
-    backgroundColor: "#fff",
-    borderRadius: moderateScale(10),
-    paddingVertical: verticalScale(12),
-    alignItems: "center",
+  error: {
+    fontFamily: "Poppins-Regular",
+    fontSize: moderateScale(12),
+    color: colors.error,
     marginTop: verticalScale(10),
   },
-
-  guestText: {
-    color: "#000000A6",
-    fontWeight: "700",
-    fontSize: moderateScale(14),
+  spacer: {
+    flex: 1,
+    minHeight: verticalScale(40),
+  },
+  createRow: {
+    alignItems: "center",
+    marginTop: verticalScale(20),
+    paddingBottom: verticalScale(4),
+  },
+  createText: {
+    fontFamily: "Poppins-Regular",
+    fontSize: moderateScale(13),
+    color: "rgba(255,255,255,0.40)",
+  },
+  createLink: {
+    fontFamily: "Poppins-Medium",
+    color: colors.brand.glow,
   },
 });

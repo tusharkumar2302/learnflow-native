@@ -1,194 +1,170 @@
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native'
-import React from 'react'
-import { Ionicons } from '@expo/vector-icons'
-import { LinearGradient } from 'expo-linear-gradient'
-import { router } from 'expo-router'
+import { authService } from "@/lib/services";
+import { authStore } from "@/stores/authStore";
+import { HugeiconsIcon } from "@hugeicons/react-native";
+import { EyeIcon, ViewOffSlashIcon } from "@hugeicons/core-free-icons";
+import { router } from "expo-router";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Animated,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { moderateScale, verticalScale } from "react-native-size-matters";
+import { colors } from "@/theme";
+import { InputField, PrimaryButton } from "@/components/ui/primitives";
 
-export default function SignUp() {
+export default function SignUp({ lightMode = false }: { lightMode?: boolean }) {
+  const { setName, setEmail: persistEmail } = authStore();
+  const [name, setNameInput] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(10)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 360, delay: 40, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 320, delay: 40, useNativeDriver: true }),
+    ]).start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const isValid =
+    name.trim().length >= 2 &&
+    email.includes("@") &&
+    password.length >= 6;
+
+  const handleCreateAccount = useCallback(async () => {
+    if (!isValid) return;
+    setError("");
+    setIsLoading(true);
+
+    try {
+      await authService.signUp(name.trim(), email.trim().toLowerCase(), password);
+      setName(name.trim());
+      persistEmail(email.trim().toLowerCase());
+      router.push("/Authentication/otp");
+    } catch {
+      setError("Account creation failed. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [name, email, password, isValid, setName, persistEmail]);
+
   return (
-     <LinearGradient
-      colors={['#0B0B0D','#191321']}
-      start={{x:0,y:0}}
-      end={{x:1,y:1}}
-      style={styles.formContainer}
-      
-      >
-      
-      <View style={{}}>
-        
-        <View style={{alignItems:'center', gap:5}}>
-              <Text style={styles.SignUpTitle}>Sign Up</Text>
-        <Text style={styles.credentialText}>Enter your Zuperior Credentials</Text>
-        </View>
-      
-
-        <View style={[styles.inputContainer,{paddingHorizontal:0}]}>
-            <View style={{ backgroundColor: '#CAA2FC26', height:'100%', borderRadius:15, justifyContent:'center',alignItems:'center'}} >
-               <Text style={styles.countryCode}>🇺🇸 +1</Text>  
-            </View>
-         
-         <View style={{ backgroundColor: '#CAA2FC26', borderRadius:15, flex:1}} >
-            <TextInput
-            placeholder="Phone Number / Email"
-            placeholderTextColor="#FFFFFF40"
-            style={styles.input}
-          /> 
-         </View>
-         
-        </View>
-
-        <View style={[styles.inputContainer,{backgroundColor:'#CAA2FC26', marginVertical:8}]}>
-          <TextInput
-            placeholder="Enter your password"
-            placeholderTextColor="#FFFFFF40"
-            secureTextEntry
-            style={styles.input}
-          />
-          <Ionicons name="eye-off-outline" size={20} color="#FFFFFF40" />
-          {/* <Image source={require('@/assets/icons/eye.png')} style={{height:20,width:20}}></Image> */}
-        </View>
-
-        <View style={[styles.inputContainer,{backgroundColor:'#CAA2FC26', marginVertical:3}]}>
-          <TextInput
-            placeholder="Confirm your password"
-            placeholderTextColor="#FFFFFF40"
-            secureTextEntry
-            style={styles.input}
-          />
-          <Ionicons name="eye-off-outline" size={20} color="#FFFFFF40" />
-          {/* <Image source={require('@/assets/icons/eye.png')} style={{height:20,width:20}}></Image> */}
-        </View>
-
-   
-      {/* <TouchableOpacity style={{backgroundColor:''}}>
-          <Text style={styles.forgotText}>*Forgot your password?</Text>
-        </TouchableOpacity> */}
-
-    
-        
-        <TouchableOpacity style={styles.GetOtpButton} onPress={()=>{}} >
-          <Text style={styles.GetOtpText}>Get OTP</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.guestButton}>
-          <Text style={styles.guestText}>Continue as Guest</Text>
-        </TouchableOpacity>
-
-        <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 10 }}>
-          <Text style={{ color: '#aaa',fontSize:12 }}>Already have an account? </Text>
-          <TouchableOpacity>
-            <Text style={{ color: '#CAA2FC',textDecorationLine: 'underline', }}>Sign in</Text>
-          </TouchableOpacity>
-        </View>
+    <Animated.View
+      style={[s.root, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}
+    >
+      {/* Fields — open layout, mirrors login */}
+      <View style={s.fields}>
+        <InputField
+          label="Full Name"
+          value={name}
+          onChangeText={setNameInput}
+          placeholder="Arjun Sharma"
+          autoCapitalize="words"
+          returnKeyType="next"
+          lightMode={lightMode}
+        />
+        <InputField
+          label="Email"
+          value={email}
+          onChangeText={setEmail}
+          placeholder="your@email.com"
+          autoCapitalize="none"
+          keyboardType="email-address"
+          autoCorrect={false}
+          returnKeyType="next"
+          lightMode={lightMode}
+        />
+        <InputField
+          label="Password"
+          value={password}
+          onChangeText={setPassword}
+          placeholder="Min. 6 characters"
+          secureTextEntry={!showPassword}
+          returnKeyType="done"
+          onSubmitEditing={handleCreateAccount}
+          lightMode={lightMode}
+          rightElement={
+            <TouchableOpacity
+              onPress={() => setShowPassword(!showPassword)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <HugeiconsIcon
+                icon={showPassword ? ViewOffSlashIcon : EyeIcon}
+                size={moderateScale(16)}
+                color={lightMode ? "rgba(0,0,0,0.35)" : colors.text.muted}
+                strokeWidth={1.5}
+              />
+            </TouchableOpacity>
+          }
+        />
       </View>
-      </LinearGradient>
-  )
+
+      {error ? <Text style={s.error}>{error}</Text> : null}
+
+      {/* Spacer — pushes CTA toward screen bottom */}
+      <View style={s.spacer} />
+
+      <View>
+        <PrimaryButton
+          label="Create Account"
+          onPress={handleCreateAccount}
+          loading={isLoading}
+          disabled={!isValid}
+        />
+
+        <TouchableOpacity
+          onPress={() => router.back()}
+          activeOpacity={0.65}
+          style={s.signInRow}
+        >
+          <Text style={[s.signInText, lightMode && { color: "rgba(0,0,0,0.42)" }]}>
+            {"Already have an account?  "}
+            <Text style={s.signInLink}>Sign in</Text>
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </Animated.View>
+  );
 }
 
-
-const styles = StyleSheet.create({
-    container: {
-  flex:1,
-    backgroundColor: '#E6C9F5', // light purple
-    paddingHorizontal: 12,
-    paddingTop: 60,
-    
-  },
-  heading: {
-    fontSize: 55,
-    fontWeight: '600',
-    color: '#000',
-    textAlign: 'left',
-    marginTop:0,
-    marginLeft:20
-  },
-  subheading: {
-    fontSize: 17,
-    color: '#333',
-    textAlign: 'left',
-    marginTop: 10,
-    marginBottom: 0,
-    marginLeft:20
-  },
-  image: {
-    width: '100%',
-    height: 240,
-    alignSelf: 'center',
-    marginBottom: 20,
-    position:'relative',
-   
-  },
-  formContainer: {
-  //  backgroundColor: '#000',
-    borderRadius: 30,
-    padding: 15,
-   position:'absolute',
-   left:0,
-  
-   top:"16%",
-    width:'100%'
-  },
-  SignUpTitle: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  credentialText: {
-    color: '#aaa',
-    fontSize: 12,
-    marginBottom: 10,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-   // backgroundColor: '#222',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    marginVertical: 3,
-   height:37,
-   gap:7
-  },
-  countryCode: {
-    color: '#FFFFFFBF',
-   // marginRight: 8,
-   padding:10
-  },
-  input: {
+const s = StyleSheet.create({
+  root: {
     flex: 1,
-    color: '#fff',
-    padding: 10,
-    
   },
-  forgotText: {
-    color: '#CAA2FC',
-    fontSize: 12,
-    textAlign: 'left',
-   // marginTop: 4,
-
-    marginBottom: 6,
-    fontWeight:'600'
+  fields: {
+    gap: verticalScale(14),
   },
-  GetOtpButton: {
-    backgroundColor: '#CAA2FC',
-    borderRadius: 10,
-    paddingVertical: 10,
-    alignItems: 'center',
-    marginTop: 8,
+  error: {
+    fontFamily: "Poppins-Regular",
+    fontSize: moderateScale(12),
+    color: colors.error,
+    marginTop: verticalScale(10),
   },
-  GetOtpText: {
-    color: '#000000CC',
-    fontWeight: 'bold',
+  spacer: {
+    flex: 1,
+    minHeight: verticalScale(40),
   },
-  guestButton: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    paddingVertical: 10,
-    alignItems: 'center',
-    marginTop: 10,
+  signInRow: {
+    alignItems: "center",
+    marginTop: verticalScale(20),
+    paddingBottom: verticalScale(4),
   },
-  guestText: {
-    color: '#000000A6',
-    fontWeight: 'bold',
-    
+  signInText: {
+    fontFamily: "Poppins-Regular",
+    fontSize: moderateScale(13),
+    color: "rgba(255,255,255,0.40)",
   },
-})
+  signInLink: {
+    fontFamily: "Poppins-Medium",
+    color: colors.brand.glow,
+  },
+});

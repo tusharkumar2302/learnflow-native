@@ -1,37 +1,57 @@
 export const colors = {
-  // Brand
-  primary: "#563FA5",
-  primaryDark: "#730A96",
-  primaryLight: "#CAA2FC",
-  accent: "#BC86FE",
+  // ── Backgrounds ──────────────────────────────────────────────────────────
+  bg: {
+    base:     "#0A0614",               // deepest layer — screen backgrounds
+    elevated: "#110820",               // cards, bottom sheets
+    surface:  "#1A1030",               // inputs, chips, secondary cards
+    overlay:  "rgba(255,255,255,0.04)", // hairline dividers, hover states
+  },
 
-  // Backgrounds
-  background: "#F5F3FF",
-  surface: "rgba(255, 255, 255, 0.60)",
-  surfaceHigh: "rgba(255, 255, 255, 0.85)",
-  surfaceDim: "rgba(255, 255, 255, 0.35)",
+  // ── Brand purple ─────────────────────────────────────────────────────────
+  brand: {
+    primary: "#7C3AED",                // CTAs, active states, interactive
+    muted:   "#5B21B6",                // gradient starts, deeper fills
+    glow:    "#A78BFA",                // text accents, icon highlights
+    dim:     "rgba(167,139,250,0.12)", // pill backgrounds, subtle fills
+  },
 
-  // Auth screen
-  authBackground: "#DCC0FF",
+  // ── Text ─────────────────────────────────────────────────────────────────
+  text: {
+    primary:   "#FFFFFF",
+    secondary: "rgba(255,255,255,0.55)",
+    muted:     "rgba(255,255,255,0.28)",
+    accent:    "#A78BFA",
+  },
 
-  // Text
-  textPrimary: "#0D0D0D",
-  textSecondary: "rgba(0, 0, 0, 0.50)",
-  textMuted: "rgba(0, 0, 0, 0.30)",
-  textInverse: "#FFFFFF",
+  // ── Borders ───────────────────────────────────────────────────────────────
+  border: {
+    subtle: "rgba(255,255,255,0.06)",
+    accent: "rgba(167,139,250,0.18)",
+  },
 
-  // Borders
-  border: "rgba(0, 0, 0, 0.06)",
-  borderLight: "rgba(255, 255, 255, 0.80)",
-
-  // Semantic
+  // ── Semantic ──────────────────────────────────────────────────────────────
   success: "#22C55E",
   warning: "#F59E0B",
-  error: "#EF4444",
-
-  // Coin
-  coin: "#F5A623",
-  coinBg: "rgba(180, 131, 241, 0.25)",
+  error:   "#EF4444",
+  coin:    "#F5A623",
 } as const;
 
-export type ColorKey = keyof typeof colors;
+export type Colors = typeof colors;
+
+// Legacy flat aliases — for gradual migration of existing screens
+export const legacyColors = {
+  primary:      "#7C3AED",
+  primaryDark:  "#5B21B6",
+  primaryLight: "#A78BFA",
+  accent:       "#A78BFA",
+  background:   "#0A0614",
+  surface:      "#1A1030",
+  textPrimary:  "#FFFFFF",
+  textSecondary:"rgba(255,255,255,0.55)",
+  textMuted:    "rgba(255,255,255,0.28)",
+  border:       "rgba(255,255,255,0.06)",
+  success:      "#22C55E",
+  warning:      "#F59E0B",
+  error:        "#EF4444",
+  coin:         "#F5A623",
+} as const;
