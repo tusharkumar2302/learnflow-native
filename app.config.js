@@ -6,10 +6,15 @@ export default {
     slug: "zuperior-learn",
     version: "1.0.9",
     orientation: "default",
-    icon: "./assets/images/icon.png",
+    icon: "./assets/images/App-icon.png",
     scheme: "zuperlearn",
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
+    splash: {
+      image: "./assets/images/Splash-screen.png",
+      resizeMode: "contain",
+      backgroundColor: "#0F0820",
+    },
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.zuperlearn.app",
@@ -22,8 +27,8 @@ export default {
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: "./assets/images/adaptive-icon.png",
-        backgroundColor: "#000000",
+        foregroundImage: "./assets/images/App-icon.png",
+        backgroundColor: "#0F0820",
       },
       edgeToEdgeEnabled: true,
       package: "com.anujchamoli.zuper_learn",
@@ -37,6 +42,18 @@ export default {
     },
     plugins: [
       "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          backgroundColor: "#0F0820",
+          image: "./assets/images/Splash-screen.png",
+          resizeMode: "contain",
+          dark: {
+            image: "./assets/images/Splash-screen.png",
+            backgroundColor: "#0F0820",
+          },
+        },
+      ],
       [
         "expo-video",
         {
