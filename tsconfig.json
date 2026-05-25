@@ -4,6 +4,7 @@
     // "jsx": "react",
      "jsx": "react-native",
     "strict": true,
+    "types": ["@hugeicons/core-free-icons", "@hugeicons/react-native"],
     "paths": {
       "@/*": [
         "./*"

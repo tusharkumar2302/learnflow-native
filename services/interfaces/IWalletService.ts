@@ -22,6 +22,14 @@ export interface WalletSummary {
   };
 }
 
+export interface AddTransactionParams {
+  type: "EARNED" | "REDEEMED";
+  amount: number;
+  note: string;
+  course?: string | null;
+}
+
 export interface IWalletService {
   getWallet(page?: number, limit?: number): Promise<WalletSummary>;
+  addTransaction(params: AddTransactionParams): Promise<void>;
 }

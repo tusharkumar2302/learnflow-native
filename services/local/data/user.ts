@@ -1,6 +1,6 @@
 import { UserProfile } from "@/services/interfaces/IAuthService";
 
-export const mockUser: UserProfile = {
+export const localUser: UserProfile = {
   id: "user-demo-001",
   name: "Arjun Sharma",
   email: "arjun@demo.com",
@@ -10,4 +10,4 @@ export const mockUser: UserProfile = {
   joinedAt: "2025-10-14T00:00:00Z",
 };
 
-export const mockAuthToken = "mock-token-demo-session-001";
+export const localAuthToken = "local-token-demo-session-001";

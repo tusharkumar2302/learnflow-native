@@ -1,15 +1,113 @@
-import { CourseDetail, CourseSummary } from "@/services/interfaces/ICourseService";
+import { ChapterQuiz, CourseDetail, CourseSummary } from "@/services/interfaces/ICourseService";
 
 const TEST_VIDEO_URL = "https://test-streams.mux.dev/x36xhzz/video/hlsnone/playlist.m3u8";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Instructors
-// ─────────────────────────────────────────────────────────────────────────────
-// Priya Kapoor  — SEBI-registered advisor, 8 yrs, ex-Motilal Oswal Research
-// Vikram Nair   — Independent trader, 12 yrs proprietary trading, ET Markets
-// Aryan Gupta   — Quant researcher, IIT Delhi, builds fintech research tools
+const quizzes: Record<string, ChapterQuiz> = {
+  "ch-ai-001": {
+    id: "quiz-ch-ai-001", title: "AI in Finance — Quick Check", coinValue: 80, isPassed: true,
+    questions: [
+      { id: "q1", text: "Which of these best describes a Large Language Model (LLM)?", options: [
+        { id: "a", text: "A model trained to execute stock trades automatically", isCorrect: false },
+        { id: "b", text: "A neural network trained on text to understand and generate language", isCorrect: true },
+        { id: "c", text: "A database of financial news articles", isCorrect: false },
+        { id: "d", text: "A rule-based screening tool for equities", isCorrect: false },
+      ]},
+      { id: "q2", text: "What is the primary limitation of using AI for equity research?", options: [
+        { id: "a", text: "AI cannot process large amounts of text", isCorrect: false },
+        { id: "b", text: "AI outputs may be confident but factually wrong (hallucination)", isCorrect: true },
+        { id: "c", text: "AI is slower than manual research", isCorrect: false },
+        { id: "d", text: "AI only works on US markets", isCorrect: false },
+      ]},
+    ],
+  },
+  "ch-ai-002": {
+    id: "quiz-ch-ai-002", title: "Stock Screening with AI", coinValue: 100, isPassed: true,
+    questions: [
+      { id: "q1", text: "When screening stocks using AI tools, what should you verify first?", options: [
+        { id: "a", text: "The AI's server location", isCorrect: false },
+        { id: "b", text: "That data sources used by the AI are current and reliable", isCorrect: true },
+        { id: "c", text: "The AI's training date only", isCorrect: false },
+        { id: "d", text: "Number of parameters in the model", isCorrect: false },
+      ]},
+      { id: "q2", text: "Which metric is NOT typically useful when screening Indian mid-cap stocks?", options: [
+        { id: "a", text: "Return on Equity (ROE)", isCorrect: false },
+        { id: "b", text: "Debt-to-Equity ratio", isCorrect: false },
+        { id: "c", text: "S&P 500 beta", isCorrect: true },
+        { id: "d", text: "Price-to-Earnings ratio", isCorrect: false },
+      ]},
+    ],
+  },
+  "ch-ai-003": {
+    id: "quiz-ch-ai-003", title: "ChatGPT for Financial Analysis", coinValue: 100, isPassed: false,
+    questions: [
+      { id: "q1", text: "What type of prompt gives the best financial analysis output from ChatGPT?", options: [
+        { id: "a", text: "Single-word prompts like 'Infosys'", isCorrect: false },
+        { id: "b", text: "Specific prompts with context, constraints, and output format specified", isCorrect: true },
+        { id: "c", text: "Copy-pasting the entire annual report", isCorrect: false },
+        { id: "d", text: "Asking for predictions with exact numbers", isCorrect: false },
+      ]},
+      { id: "q2", text: "Which of the following is a safe use of ChatGPT in equity research?", options: [
+        { id: "a", text: "Asking it to predict next quarter's EPS", isCorrect: false },
+        { id: "b", text: "Using it to summarise and compare multiple analyst reports", isCorrect: true },
+        { id: "c", text: "Treating its output as a buy/sell recommendation", isCorrect: false },
+        { id: "d", text: "Asking for real-time stock prices", isCorrect: false },
+      ]},
+    ],
+  },
+  "ch-ai-004": {
+    id: "quiz-ch-ai-004", title: "Portfolio Automation Quiz", coinValue: 80, isPassed: false,
+    questions: [
+      { id: "q1", text: "Which tool is commonly used to automate portfolio tracking with Indian broker APIs?", options: [
+        { id: "a", text: "Microsoft Word macros", isCorrect: false },
+        { id: "b", text: "Google Sheets with Zerodha Kite API or Smallcase", isCorrect: true },
+        { id: "c", text: "Bloomberg Terminal only", isCorrect: false },
+        { id: "d", text: "NSE website manual download", isCorrect: false },
+      ]},
+      { id: "q2", text: "What is the main benefit of automating portfolio rebalancing?", options: [
+        { id: "a", text: "It guarantees higher returns", isCorrect: false },
+        { id: "b", text: "It removes emotion from the process and maintains target allocation", isCorrect: true },
+        { id: "c", text: "It reduces brokerage charges to zero", isCorrect: false },
+        { id: "d", text: "It predicts market crashes", isCorrect: false },
+      ]},
+    ],
+  },
+  "ch-ai-005": {
+    id: "quiz-ch-ai-005", title: "News Sentiment Analysis Quiz", coinValue: 80, isPassed: false,
+    questions: [
+      { id: "q1", text: "What does 'negative sentiment' in news analysis typically indicate for a stock?", options: [
+        { id: "a", text: "The stock will definitely fall", isCorrect: false },
+        { id: "b", text: "There is adverse news coverage that may create short-term selling pressure", isCorrect: true },
+        { id: "c", text: "The company is bankrupt", isCorrect: false },
+        { id: "d", text: "Nothing — sentiment has no market impact", isCorrect: false },
+      ]},
+      { id: "q2", text: "Which Indian financial news source is best for real-time market sentiment?", options: [
+        { id: "a", text: "Weekend print newspapers", isCorrect: false },
+        { id: "b", text: "ET Markets, Moneycontrol, or NSE announcements feed", isCorrect: true },
+        { id: "c", text: "Social media posts only", isCorrect: false },
+        { id: "d", text: "Company's own press releases only", isCorrect: false },
+      ]},
+    ],
+  },
+  "ch-ai-006": {
+    id: "quiz-ch-ai-006", title: "Research Workflow Quiz", coinValue: 60, isPassed: false,
+    questions: [
+      { id: "q1", text: "In a structured research workflow, what comes BEFORE valuation?", options: [
+        { id: "a", text: "Buy/sell decision", isCorrect: false },
+        { id: "b", text: "Business understanding and financial analysis", isCorrect: true },
+        { id: "c", text: "Portfolio construction", isCorrect: false },
+        { id: "d", text: "Exit planning", isCorrect: false },
+      ]},
+      { id: "q2", text: "What is the key advantage of a repeatable research checklist?", options: [
+        { id: "a", text: "It guarantees you never make losses", isCorrect: false },
+        { id: "b", text: "It ensures consistency and reduces cognitive biases across decisions", isCorrect: true },
+        { id: "c", text: "It speeds up trading execution", isCorrect: false },
+        { id: "d", text: "It replaces the need to read annual reports", isCorrect: false },
+      ]},
+    ],
+  },
+};
 
-export const mockCourseSummaries: CourseSummary[] = [
+export const localCourseSummaries: CourseSummary[] = [
   {
     id: "course-ai-001",
     title: "AI Tools for Financial Research",
@@ -77,7 +175,7 @@ export const mockCourseSummaries: CourseSummary[] = [
   },
 ];
 
-export const mockCourseDetails: Record<string, CourseDetail> = {
+export const localCourseDetails: Record<string, CourseDetail> = {
   "course-ai-001": {
     id: "course-ai-001",
     title: "AI Tools for Financial Research",
@@ -99,78 +197,12 @@ export const mockCourseDetails: Record<string, CourseDetail> = {
       lastWatchedChapterId: "ch-ai-003",
     },
     chapters: [
-      {
-        id: "ch-ai-001",
-        title: "Why AI is Changing Financial Research",
-        order: 1,
-        duration: 782,
-        isCompleted: true,
-        videoCompleted: true,
-        currentTime: 0,
-        coinValue: 80,
-        quizCount: 1,
-        quizPassed: true,
-      },
-      {
-        id: "ch-ai-002",
-        title: "Screening Stocks with AI Tools",
-        order: 2,
-        duration: 1056,
-        isCompleted: true,
-        videoCompleted: true,
-        currentTime: 0,
-        coinValue: 100,
-        quizCount: 1,
-        quizPassed: true,
-      },
-      {
-        id: "ch-ai-003",
-        title: "Using ChatGPT for Financial Analysis",
-        order: 3,
-        duration: 934,
-        isCompleted: false,
-        videoCompleted: false,
-        currentTime: 154,
-        coinValue: 100,
-        quizCount: 1,
-        quizPassed: false,
-      },
-      {
-        id: "ch-ai-004",
-        title: "Automating Your Portfolio Tracking",
-        order: 4,
-        duration: 811,
-        isCompleted: false,
-        videoCompleted: false,
-        currentTime: 0,
-        coinValue: 80,
-        quizCount: 1,
-        quizPassed: false,
-      },
-      {
-        id: "ch-ai-005",
-        title: "AI for News & Sentiment Analysis",
-        order: 5,
-        duration: 973,
-        isCompleted: false,
-        videoCompleted: false,
-        currentTime: 0,
-        coinValue: 80,
-        quizCount: 1,
-        quizPassed: false,
-      },
-      {
-        id: "ch-ai-006",
-        title: "Building Your Research Workflow",
-        order: 6,
-        duration: 694,
-        isCompleted: false,
-        videoCompleted: false,
-        currentTime: 0,
-        coinValue: 60,
-        quizCount: 1,
-        quizPassed: false,
-      },
+      { id: "ch-ai-001", title: "Why AI is Changing Financial Research", order: 1, duration: 782, isCompleted: true, videoCompleted: true, currentTime: 0, coinValue: 80, quizCount: 1, quizPassed: true, quiz: quizzes["ch-ai-001"] },
+      { id: "ch-ai-002", title: "Screening Stocks with AI Tools", order: 2, duration: 1056, isCompleted: true, videoCompleted: true, currentTime: 0, coinValue: 100, quizCount: 1, quizPassed: true, quiz: quizzes["ch-ai-002"] },
+      { id: "ch-ai-003", title: "Using ChatGPT for Financial Analysis", order: 3, duration: 934, isCompleted: false, videoCompleted: false, currentTime: 154, coinValue: 100, quizCount: 1, quizPassed: false, quiz: quizzes["ch-ai-003"] },
+      { id: "ch-ai-004", title: "Automating Your Portfolio Tracking", order: 4, duration: 811, isCompleted: false, videoCompleted: false, currentTime: 0, coinValue: 80, quizCount: 1, quizPassed: false, quiz: quizzes["ch-ai-004"] },
+      { id: "ch-ai-005", title: "AI for News & Sentiment Analysis", order: 5, duration: 973, isCompleted: false, videoCompleted: false, currentTime: 0, coinValue: 80, quizCount: 1, quizPassed: false, quiz: quizzes["ch-ai-005"] },
+      { id: "ch-ai-006", title: "Building Your Research Workflow", order: 6, duration: 694, isCompleted: false, videoCompleted: false, currentTime: 0, coinValue: 60, quizCount: 1, quizPassed: false, quiz: quizzes["ch-ai-006"] },
     ],
   },
 
@@ -195,66 +227,11 @@ export const mockCourseDetails: Record<string, CourseDetail> = {
       lastWatchedChapterId: "ch-stocks-005",
     },
     chapters: [
-      {
-        id: "ch-stocks-001",
-        title: "How Indian Stock Markets Work",
-        order: 1,
-        duration: 712,
-        isCompleted: true,
-        videoCompleted: true,
-        currentTime: 0,
-        coinValue: 90,
-        quizCount: 1,
-        quizPassed: true,
-      },
-      {
-        id: "ch-stocks-002",
-        title: "Reading a Balance Sheet",
-        order: 2,
-        duration: 1034,
-        isCompleted: true,
-        videoCompleted: true,
-        currentTime: 0,
-        coinValue: 90,
-        quizCount: 1,
-        quizPassed: true,
-      },
-      {
-        id: "ch-stocks-003",
-        title: "Key Financial Ratios Explained",
-        order: 3,
-        duration: 891,
-        isCompleted: true,
-        videoCompleted: true,
-        currentTime: 0,
-        coinValue: 90,
-        quizCount: 1,
-        quizPassed: true,
-      },
-      {
-        id: "ch-stocks-004",
-        title: "Order Types and Trade Execution",
-        order: 4,
-        duration: 645,
-        isCompleted: true,
-        videoCompleted: true,
-        currentTime: 0,
-        coinValue: 90,
-        quizCount: 1,
-        quizPassed: true,
-      },
-      {
-        id: "ch-stocks-005",
-        title: "Building a Simple Portfolio",
-        order: 5,
-        duration: 978,
-        isCompleted: true,
-        videoCompleted: true,
-        currentTime: 0,
-        coinValue: 90,
-        quizCount: 1,
-        quizPassed: true,
-      },
+      { id: "ch-stocks-001", title: "How Indian Stock Markets Work", order: 1, duration: 712, isCompleted: true, videoCompleted: true, currentTime: 0, coinValue: 90, quizCount: 1, quizPassed: true },
+      { id: "ch-stocks-002", title: "Reading a Balance Sheet", order: 2, duration: 1034, isCompleted: true, videoCompleted: true, currentTime: 0, coinValue: 90, quizCount: 1, quizPassed: true },
+      { id: "ch-stocks-003", title: "Key Financial Ratios Explained", order: 3, duration: 891, isCompleted: true, videoCompleted: true, currentTime: 0, coinValue: 90, quizCount: 1, quizPassed: true },
+      { id: "ch-stocks-004", title: "Order Types and Trade Execution", order: 4, duration: 645, isCompleted: true, videoCompleted: true, currentTime: 0, coinValue: 90, quizCount: 1, quizPassed: true },
+      { id: "ch-stocks-005", title: "Building a Simple Portfolio", order: 5, duration: 978, isCompleted: true, videoCompleted: true, currentTime: 0, coinValue: 90, quizCount: 1, quizPassed: true },
     ],
   },
 
@@ -335,4 +312,4 @@ export const mockCourseDetails: Record<string, CourseDetail> = {
   },
 };
 
-export const MOCK_VIDEO_URL = TEST_VIDEO_URL;
+export const LOCAL_VIDEO_URL = TEST_VIDEO_URL;

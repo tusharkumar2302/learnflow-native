@@ -14,6 +14,8 @@ export interface AuthResult {
 }
 
 export interface IAuthService {
+  signIn(email: string, password: string): Promise<AuthResult>;
+  signUp(name: string, email: string, password: string): Promise<void>;
   requestOTP(email: string): Promise<void>;
   verifyOTP(email: string, otp: string): Promise<AuthResult>;
   getProfile(): Promise<UserProfile>;

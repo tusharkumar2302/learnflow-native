@@ -1,6 +1,6 @@
 import { LeaderboardEntry, WeeklyQuizSummary } from "@/services/interfaces/IQuizService";
 
-export const mockWeeklyQuiz: WeeklyQuizSummary = {
+export const localWeeklyQuiz: WeeklyQuizSummary = {
   id: "wq-2026-w21",
   title: "Weekly Challenge: Financial Ratios",
   description: "Test your understanding of the ratios that drive smarter investment decisions.",
@@ -74,7 +74,7 @@ export const mockWeeklyQuiz: WeeklyQuizSummary = {
   ],
 };
 
-export const mockLeaderboard: LeaderboardEntry[] = [
+export const localLeaderboard: LeaderboardEntry[] = [
   { rank: 1, userId: "u-101", name: "Kavya R.", score: 100, percentageScore: 100, submittedAt: "2026-05-18T08:12:00Z" },
   { rank: 2, userId: "u-102", name: "Siddharth M.", score: 100, percentageScore: 100, submittedAt: "2026-05-18T09:44:00Z" },
   { rank: 3, userId: "u-103", name: "Meera J.", score: 80, percentageScore: 80, submittedAt: "2026-05-18T11:03:00Z" },

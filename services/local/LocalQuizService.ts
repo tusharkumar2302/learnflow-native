@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   IQuizService,
   LeaderboardEntry,
@@ -5,11 +6,19 @@ import {
   QuizSubmitResult,
   WeeklyQuizSummary,
 } from "@/services/interfaces/IQuizService";
-import { mockLeaderboard, mockWeeklyQuiz } from "./data/weeklyQuiz";
+import { localLeaderboard, localWeeklyQuiz } from "./data/quizzes";
 
-export class MockQuizService implements IQuizService {
+const QUIZ_SUBMISSION_KEY = "weekly_quiz_submission_";
+
+export class LocalQuizService implements IQuizService {
   async getWeeklyQuiz(): Promise<WeeklyQuizSummary | null> {
-    return mockWeeklyQuiz;
+    const submissionKey = QUIZ_SUBMISSION_KEY + localWeeklyQuiz.id;
+    try {
+      const submitted = await AsyncStorage.getItem(submissionKey);
+      return { ...localWeeklyQuiz, hasSubmitted: submitted === "true" };
+    } catch {
+      return localWeeklyQuiz;
+    }
   }
 
   async submitWeeklyQuiz(
@@ -17,7 +26,7 @@ export class MockQuizService implements IQuizService {
     answers: QuizAnswer[]
   ): Promise<QuizSubmitResult> {
     let correct = 0;
-    const questions = mockWeeklyQuiz.questions;
+    const questions = localWeeklyQuiz.questions;
 
     for (const answer of answers) {
       const question = questions.find((q) => q.id === answer.questionId);
@@ -31,11 +40,16 @@ export class MockQuizService implements IQuizService {
     const totalScore = correct * 20;
     const maxScore = questions.length * 20;
     const percentageScore = Math.round((totalScore / maxScore) * 100);
-    const passed = percentageScore >= mockWeeklyQuiz.passingScore;
+    const passed = percentageScore >= localWeeklyQuiz.passingScore;
+
+    await AsyncStorage.setItem(
+      QUIZ_SUBMISSION_KEY + localWeeklyQuiz.id,
+      "true"
+    );
 
     return {
       passed,
-      coinsAwarded: passed ? mockWeeklyQuiz.coinReward : 0,
+      coinsAwarded: passed ? localWeeklyQuiz.coinReward : 0,
       totalScore,
       maxScore,
       percentageScore,
@@ -45,6 +59,6 @@ export class MockQuizService implements IQuizService {
   }
 
   async getLeaderboard(_quizId: string, limit = 10): Promise<LeaderboardEntry[]> {
-    return mockLeaderboard.slice(0, limit);
+    return localLeaderboard.slice(0, limit);
   }
 }

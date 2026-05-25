@@ -1,6 +1,6 @@
 import { WalletSummary } from "@/services/interfaces/IWalletService";
 
-export const mockWallet: WalletSummary = {
+export const localWallet: WalletSummary = {
   balance: 1250,
   totalEarned: 1550,
   totalRedeemed: 300,

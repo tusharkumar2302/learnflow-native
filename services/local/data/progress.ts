@@ -1,9 +1,7 @@
 import { ChapterProgressRecord } from "@/services/interfaces/IProgressService";
 import { RecentChapter } from "@/services/interfaces/ICourseService";
 
-// User is mid-way through "AI Tools for Financial Research":
-// Ch1 done, Ch2 done, Ch3 in progress at 2m34s
-export const mockChapterProgress: Record<string, ChapterProgressRecord> = {
+export const localChapterProgress: Record<string, ChapterProgressRecord> = {
   "ch-ai-001": {
     chapterId: "ch-ai-001",
     currentTime: 0,
@@ -24,8 +22,7 @@ export const mockChapterProgress: Record<string, ChapterProgressRecord> = {
   },
 };
 
-// "Continue Learning" card on Home — resumes at Ch3, 2m34s in
-export const mockRecentChapters: RecentChapter[] = [
+export const localRecentChapters: RecentChapter[] = [
   {
     courseId: "course-ai-001",
     courseTitle: "AI Tools for Financial Research",

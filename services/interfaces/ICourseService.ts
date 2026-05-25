@@ -28,6 +28,26 @@ export interface CourseDetail extends CourseSummary {
   };
 }
 
+export interface QuizOption {
+  id: string;
+  text: string;
+  isCorrect: boolean;
+}
+
+export interface QuizQuestion {
+  id: string;
+  text: string;
+  options: QuizOption[];
+}
+
+export interface ChapterQuiz {
+  id: string;
+  title: string;
+  coinValue: number;
+  isPassed: boolean;
+  questions: QuizQuestion[];
+}
+
 export interface ChapterSummary {
   id: string;
   title: string;
@@ -39,6 +59,7 @@ export interface ChapterSummary {
   coinValue: number;
   quizCount: number;
   quizPassed: boolean;
+  quiz?: ChapterQuiz;
 }
 
 export interface RecentChapter {
